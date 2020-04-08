@@ -39,13 +39,30 @@ enum class wxTypes : int
 	DatePicker,
 	TimePicker,
 	CalendarCtrl,
+	Maximum,
 	Invalid = 0xFF,
 };
+wxString GetNameFromEnum(wxTypes to_get);
 
-struct
+class ObjectStructure
 {
-	int id;
+public:
+	wxTypes type;
+	int id; /**Item ID */
+	wxString name; /**< Item name */
+
+	ObjectStructure(wxTypes _type, wxString _name = wxT(" ")) :
+		type(_type), name(std::move(name))
+	{
+		extern uint16_t wx_list[];
+		extern const char* type_names[12];
+		id = wx_list[static_cast<int>(_type)]++;
+		name = wxString::Format("%s_%d", GetNameFromEnum(type), id);
+	}
 };
+
+
+
 class MyPanel : public wxPanel
 {
 public:
@@ -75,10 +92,8 @@ private:
 	void OnMouseLeave(wxMouseEvent& event);
 	void OnPropertyGridChange(wxPropertyGridEvent& event);
 	void OnClick(wxMouseEvent& event);
-	void OnDoubleClick(wxMouseEvent& event);
-	void OnMiddleClick(wxMouseEvent& event);
 	template <class T> void SetPos(void* ptr, wxPoint& pos);
-	wxTypes FindwxText(void* object_to_find = nullptr);
+	ObjectStructure* FindwxText(void* object_to_find = nullptr);
 	wxDECLARE_EVENT_TABLE();
 };
 

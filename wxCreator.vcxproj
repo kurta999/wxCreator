@@ -148,6 +148,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="magic_enum.hpp" />
     <ClInclude Include="main_frame.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="resource.h" />

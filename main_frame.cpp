@@ -16,6 +16,7 @@
 #include <wx/aui/aui.h>
 #include "wx/treelist.h"
 #include "wx/treectrl.h"
+#include "magic_enum.hpp"
 
 enum
 {
@@ -29,16 +30,16 @@ EVT_MENU(ID_Hello, MyFrame::OnHelp)
 wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(MyPanel, wxPanel)
-	EVT_MOTION(MyPanel::OnMouseMotion)
-	EVT_LEFT_DOWN(MyPanel::OnMouseLeftDown)
-	EVT_ENTER_WINDOW(MyPanel::OnMouseEnter)
-	EVT_LEAVE_WINDOW(MyPanel::OnMouseLeave)
-	EVT_PG_CHANGED(PGID, MyPanel::OnPropertyGridChange)
+EVT_MOTION(MyPanel::OnMouseMotion)
+EVT_LEFT_DOWN(MyPanel::OnMouseLeftDown)
+EVT_ENTER_WINDOW(MyPanel::OnMouseEnter)
+EVT_LEAVE_WINDOW(MyPanel::OnMouseLeave)
+EVT_PG_CHANGED(PGID, MyPanel::OnPropertyGridChange)
 wxEND_EVENT_TABLE()
 
-std::unordered_map<void*, wxTypes> objects;
+uint16_t wx_list[static_cast<int>(wxTypes::Maximum)];
+std::unordered_map<void*, ObjectStructure*> objects;
 wxAuiNotebook* ctrl;
-static const char* type_names[] = { "wxComboBox", "wxChoice", "wxListBox", "wxCheckBox", "wxRadioButton", "wxStaticLine", "wxSlider", "wxGauge", "wxButton", "wxStaticText", "wxSpinCtrl", "wxTextCtrl" };
 
 void MyFrame::OnSize(wxSizeEvent& size)
 {
@@ -58,67 +59,67 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 	for (auto x : objects)
 	{
 		if (!x.first) continue;
-		if (x.second == wxTypes::Text)
+		if (x.second->type == wxTypes::Text)
 		{
 			wxStaticText* t = reinterpret_cast<wxStaticText*>(x.first);
-			str += wxString::Format("new wxStaticText(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
-				t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxStaticText(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
+				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 		}		
-		if (x.second == wxTypes::ComboBox)
+		if (x.second->type == wxTypes::ComboBox)
 		{
 			wxComboBox* t = reinterpret_cast<wxComboBox*>(x.first);
-			str += wxString::Format("new wxComboBox(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
-				t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxComboBox(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
+				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 		}		
-		if (x.second == wxTypes::Choise)
+		if (x.second->type == wxTypes::Choise)
 		{
 			wxChoice* t = reinterpret_cast<wxChoice*>(x.first);
 			str += wxString("wxArrayString m_choiceChoices;\n");
-			str += wxString::Format("new wxChoice(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), m_choiceChoices, 0);\n", 
-				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxChoice(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), m_choiceChoices, 0);\n", 
+				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 			str += wxString("m_wxChoice->SetSelection(0);\n");
 		}
-		if (x.second == wxTypes::ListBox)
+		if (x.second->type == wxTypes::ListBox)
 		{
 			wxListBox* t = reinterpret_cast<wxListBox*>(x.first);
-			str += wxString::Format("new wxListBox(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
-				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxListBox(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
+				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 		}		
-		if (x.second == wxTypes::CheckBox)
+		if (x.second->type == wxTypes::CheckBox)
 		{
 			wxCheckBox* t = reinterpret_cast<wxCheckBox*>(x.first);
-			str += wxString::Format("new wxCheckBox(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
-				t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxCheckBox(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
+				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 		}		
-		if (x.second == wxTypes::StaticLine)
+		if (x.second->type == wxTypes::StaticLine)
 		{
 			wxStaticLine* t = reinterpret_cast<wxStaticLine*>(x.first);
-			str += wxString::Format("new wxStaticLine(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
-				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxStaticLine(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
+				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 		}
-		if (x.second == wxTypes::Slider)
+		if (x.second->type == wxTypes::Slider)
 		{
 			wxSlider* t = reinterpret_cast<wxSlider*>(x.first);
-			str += wxString::Format("new wxSlider(this, wxID_ANY, %d, %d, %d, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
-				0, t->GetMin(), t->GetMax(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxSlider(this, wxID_ANY, %d, %d, %d, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
+				x.second->name, 0, t->GetMin(), t->GetMax(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 		}		
-		if (x.second == wxTypes::Gauge)
+		if (x.second->type == wxTypes::Gauge)
 		{
 			wxGauge* t = reinterpret_cast<wxGauge*>(x.first);
-			str += wxString::Format("new wxGauge(this, wxID_ANY, 100, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
-				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxGauge(this, wxID_ANY, 100, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
+				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 		}		
-		if (x.second == wxTypes::SpinControl)
+		if (x.second->type == wxTypes::SpinControl)
 		{
 			wxSpinCtrl* t = reinterpret_cast<wxSpinCtrl*>(x.first);
-			str += wxString::Format("new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxPoint(%d, %d), wxSize(%d, %d), wxSP_ARROW_KEYS, 1, 255, 1);\n", 
-				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxPoint(%d, %d), wxSize(%d, %d), wxSP_ARROW_KEYS, 1, 255, 1);\n", 
+				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 		}		
-		if (x.second == wxTypes::TextControl)
+		if (x.second->type == wxTypes::TextControl)
 		{
 			wxSpinCtrl* t = reinterpret_cast<wxSpinCtrl*>(x.first);
-			str += wxString::Format("new wxTextCtrl(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxDefaultSize, 0);\n", 
-				t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxTextCtrl(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxDefaultSize, 0);\n", 
+				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 		}	
 	}
 	cpp_panel->m_StyledTextCtrl->ClearAll();
@@ -127,7 +128,7 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 
 MyFrame::MyFrame(const wxString& title)
 	: wxFrame(NULL, wxID_ANY, title, wxDefaultPosition,
-		wxSize(1024, 1000))
+		wxSize(1280, 1024))
 {
 	m_mgr.SetManagedWindow(this);
 	wxMenu* menuFile = new wxMenu;
@@ -171,7 +172,10 @@ MyFrame::MyFrame(const wxString& title)
 
 }
 
+wxPGProperty* m_pgType;
 wxPGProperty* m_pgId;
+wxPGProperty* m_pgName;
+wxPGProperty* m_pgLabel;
 wxPGProperty* m_pgPos;
 wxPGProperty* m_pgSize;
 wxPGProperty* m_pgMinSize;
@@ -190,7 +194,16 @@ public:
 	PropertyGrid(MyPanel* parent, int id, wxString pos, wxString size, wxColour color)
 	{
 		m_propertyGrid = new wxPropertyGrid(parent, PGID, wxPoint(850, 0), wxSize(300, 500), wxPG_DEFAULT_STYLE);
+		wxPGProperty* pid = m_propertyGrid->Append(new wxPropertyCategory("wxCreator Item"));
+		pid->SetValue("Value");
+
+
+		m_pgType = m_propertyGrid->Append(new wxStringProperty(wxT("Type"), wxPG_LABEL));
+		m_propertyGrid->DisableProperty("Type");
+
 		m_pgId = m_propertyGrid->Append(new wxIntProperty(wxT("ID"), wxPG_LABEL, id));
+		m_pgName = m_propertyGrid->Append(new wxStringProperty(wxT("Name"), wxPG_LABEL));
+		m_pgLabel = m_propertyGrid->Append(new wxStringProperty(wxT("Label"), wxPG_LABEL));
 		m_pgPos = m_propertyGrid->Append(new wxStringProperty(wxT("Position"), wxPG_LABEL, pos));
 		m_pgSize = m_propertyGrid->Append(new wxStringProperty(wxT("Size"), wxPG_LABEL, size));
 		m_pgMinSize = m_propertyGrid->Append(new wxStringProperty(wxT("Min size"), wxPG_LABEL, size));
@@ -201,26 +214,29 @@ public:
 		m_pgTooltip = m_propertyGrid->Append(new wxStringProperty(wxT("Tooltip"), wxPG_LABEL));
 		m_pgEnabled = m_propertyGrid->Append(new wxBoolProperty(wxT("Enabled"), wxPG_LABEL, true));
 		m_pgHidden = m_propertyGrid->Append(new wxBoolProperty(wxT("Hidden"), wxPG_LABEL, true));
+		
 	}
 
-	void Update(int id, wxPoint pos, wxSize size, wxSize min_size, wxSize max_size, const wxColour f_color, wxColour b_color, wxFont font, bool bEnable,
-		bool bHidden)
+	void Update(std::pair<void*, ObjectStructure*> pair)
 	{
-		m_pgId->SetValue(id);
-		m_pgPos->SetValue(wxString::Format("%d,%d", pos.x, pos.y));
-		m_pgSize->SetValue(wxString::Format("%d,%d", size.x, size.y));
-		m_pgMinSize->SetValue(wxString::Format("%d,%d", min_size.x, min_size.y));
-		m_pgMaxSize->SetValue(wxString::Format("%d,%d", max_size.x, max_size.y));
+		wxStaticText* t = reinterpret_cast<wxStaticText*>(pair.first);
+		m_pgId->SetValue(pair.second->id);
+		m_pgName->SetValue(pair.second->name);
+		m_pgLabel->SetValue(t->GetLabelText());
+		m_pgPos->SetValue(wxString::Format("%d,%d", t->GetPosition().x, t->GetPosition().y));
+		m_pgSize->SetValue(wxString::Format("%d,%d", t->GetSize().x, t->GetSize().y));
+		m_pgMinSize->SetValue(wxString::Format("%d,%d", t->GetMinSize().x, t->GetMinSize().y));
+		m_pgMaxSize->SetValue(wxString::Format("%d,%d", t->GetMaxSize().x, t->GetMaxSize().y));
 		
 		wxVariant f_clr, b_clr, fnt;
-		f_clr << f_color;
-		b_clr << b_color;
-		fnt << font;
+		f_clr << t->GetForegroundColour();
+		b_clr << t->GetBackgroundColour();
+		fnt << t->GetFont();
 		m_pgForegroundColor->SetValue(f_clr);
 		m_pgBackgroundColor->SetValue(b_clr);
 		m_pgFont->SetValue(fnt);
-		m_pgEnabled->SetValue(bEnable);
-		m_pgHidden->SetValue(bHidden);
+		m_pgEnabled->SetValue(t->IsEnabled());
+		m_pgHidden->SetValue(!t->IsShown());
 	}
 public:
 	wxPropertyGrid* m_propertyGrid;
@@ -297,12 +313,10 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxButton - pos: %d,%d", m_wxButton->GetPosition().x, m_wxButton->GetPosition().y));
 
 			void* tmp = new wxButton(this, wxID_ANY, wxT("wxButton"), wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = wxTypes::Button;
+			objects[tmp] = new ObjectStructure(wxTypes::Button);
 			m_SelectedWidget = tmp;
 
 			((wxButton*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
-			((wxButton*)(tmp))->Bind(wxEVT_LEFT_DCLICK, &MyPanel::OnDoubleClick, this);
-			((wxButton*)(tmp))->Bind(wxEVT_MIDDLE_DOWN, &MyPanel::OnMiddleClick, this);
 		});
 
 	m_wxComboBox = new wxComboBox(this, wxID_ANY, wxT("combo"), wxPoint(30, 815), wxSize(40, 25), 0);
@@ -312,12 +326,10 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxComboBox - pos: %d,%d", m_wxComboBox->GetPosition().x, m_wxComboBox->GetPosition().y));
 
 			void* tmp = new wxComboBox(this, wxID_ANY, wxT("wxComboBox"), wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = wxTypes::Button;
+			objects[tmp] = new ObjectStructure(wxTypes::ComboBox);
 			m_SelectedWidget = tmp;
 
 			((wxButton*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
-			((wxButton*)(tmp))->Bind(wxEVT_LEFT_DCLICK, &MyPanel::OnDoubleClick, this);
-			((wxButton*)(tmp))->Bind(wxEVT_MIDDLE_DOWN, &MyPanel::OnMiddleClick, this);
 		});
 
 	wxArrayString m_choiceChoices;
@@ -333,12 +345,10 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_choiceChoices2.Add("Second");
 			void* tmp = new wxChoice(this, wxID_ANY, wxPoint(80, 815), wxSize(40, 25), m_choiceChoices2, 0);
 			((wxChoice*)(tmp))->SetSelection(0);
-			objects[tmp] = wxTypes::Button;
+			objects[tmp] = new ObjectStructure(wxTypes::Choise);
 			m_SelectedWidget = tmp;
 
 			((wxChoice*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
-			((wxChoice*)(tmp))->Bind(wxEVT_LEFT_DCLICK, &MyPanel::OnDoubleClick, this);
-			((wxChoice*)(tmp))->Bind(wxEVT_MIDDLE_DOWN, &MyPanel::OnMiddleClick, this);
 		});
 
 	m_wxListBox = new wxListBox(this, wxID_ANY, wxPoint(120, 815), wxSize(40, 25), 0);
@@ -348,12 +358,10 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxComboBox - pos: %d,%d", m_wxListBox->GetPosition().x, m_wxListBox->GetPosition().y));
 
 			void* tmp = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = wxTypes::Button;
+			objects[tmp] = new ObjectStructure(wxTypes::ListBox);
 			m_SelectedWidget = tmp;
 
 			((wxListBox*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
-			((wxListBox*)(tmp))->Bind(wxEVT_LEFT_DCLICK, &MyPanel::OnDoubleClick, this);
-			((wxListBox*)(tmp))->Bind(wxEVT_MIDDLE_DOWN, &MyPanel::OnMiddleClick, this);
 		});
 
 	m_wxCheckBox = new wxCheckBox(this, wxID_ANY, wxT("Check Me!"), wxPoint(140, 815), wxSize(40, 25), 0);
@@ -363,12 +371,10 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxCheckBox - pos: %d,%d", m_wxCheckBox->GetPosition().x, m_wxCheckBox->GetPosition().y));
 
 			void* tmp = new wxCheckBox(this, wxID_ANY, wxT("Check Me!"), wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = wxTypes::Button;
+			objects[tmp] = new ObjectStructure(wxTypes::CheckBox);
 			m_SelectedWidget = tmp;
 
 			((wxCheckBox*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
-			((wxCheckBox*)(tmp))->Bind(wxEVT_LEFT_DCLICK, &MyPanel::OnDoubleClick, this);
-			((wxCheckBox*)(tmp))->Bind(wxEVT_MIDDLE_DOWN, &MyPanel::OnMiddleClick, this);
 		});
 
 	m_wxRadioButton = new wxRadioButton(this, wxID_ANY, wxT("RadioBtn"), wxPoint(190, 815), wxSize(40, 25), 0);
@@ -378,12 +384,10 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxRadioButton - pos: %d,%d", m_wxRadioButton->GetPosition().x, m_wxRadioButton->GetPosition().y));
 
 			void* tmp = new wxRadioButton(this, wxID_ANY, wxT("RadioBtn"), wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = wxTypes::Button;
+			objects[tmp] = new ObjectStructure(wxTypes::RadioButton);
 			m_SelectedWidget = tmp;
 
 			((wxRadioButton*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
-			((wxRadioButton*)(tmp))->Bind(wxEVT_LEFT_DCLICK, &MyPanel::OnDoubleClick, this);
-			((wxRadioButton*)(tmp))->Bind(wxEVT_MIDDLE_DOWN, &MyPanel::OnMiddleClick, this);
 		});
 
 	m_wxStaticLine = new wxStaticLine(this, wxID_ANY, wxPoint(230, 815), wxSize(40, 25), 0);
@@ -393,12 +397,10 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxStaticLine - pos: %d,%d", m_wxStaticLine->GetPosition().x, m_wxStaticLine->GetPosition().y));
 
 			void* tmp = new wxStaticLine(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = wxTypes::StaticLine;
+			objects[tmp] = new ObjectStructure(wxTypes::StaticLine);
 			m_SelectedWidget = tmp;
 
 			((wxStaticLine*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
-			((wxStaticLine*)(tmp))->Bind(wxEVT_LEFT_DCLICK, &MyPanel::OnDoubleClick, this);
-			((wxStaticLine*)(tmp))->Bind(wxEVT_MIDDLE_DOWN, &MyPanel::OnMiddleClick, this);
 		});
 
 	m_wxSlider = new wxSlider(this, wxID_ANY, 50, 0, 100, wxPoint(260, 815), wxSize(40, 25), 0);
@@ -408,12 +410,10 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxSlider - pos: %d,%d", m_wxSlider->GetPosition().x, m_wxSlider->GetPosition().y));
 
 			void* tmp = new wxSlider(this, wxID_ANY, 50, 0, 100, wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = wxTypes::Slider;
+			objects[tmp] = new ObjectStructure(wxTypes::Slider);
 			m_SelectedWidget = tmp;
 
 			((wxSlider*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
-			((wxSlider*)(tmp))->Bind(wxEVT_LEFT_DCLICK, &MyPanel::OnDoubleClick, this);
-			((wxSlider*)(tmp))->Bind(wxEVT_MIDDLE_DOWN, &MyPanel::OnMiddleClick, this);
 		});
 
 	m_wxGauge = new wxGauge(this, wxID_ANY, 100, wxPoint(290, 815), wxSize(40, 25), 0);
@@ -424,12 +424,10 @@ MyPanel::MyPanel(wxFrame* parent)
 
 			void* tmp = new wxGauge(this, wxID_ANY, 100, wxDefaultPosition, wxDefaultSize, 0);
 			((wxGauge*)(tmp))->SetValue(20);
-			objects[tmp] = wxTypes::Slider;
+			objects[tmp] = new ObjectStructure(wxTypes::Gauge);
 			m_SelectedWidget = tmp;
 
 			((wxGauge*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
-			((wxGauge*)(tmp))->Bind(wxEVT_LEFT_DCLICK, &MyPanel::OnDoubleClick, this);
-			((wxGauge*)(tmp))->Bind(wxEVT_MIDDLE_DOWN, &MyPanel::OnMiddleClick, this);
 		});
 
 
@@ -440,12 +438,10 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxStaticText - pos: %d,%d", m_wxStaticText->GetPosition().x, m_wxStaticText->GetPosition().y));
 
 			void* tmp = new wxStaticText(this, wxID_ANY, wxT("wxStaticText"), wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = wxTypes::Text;
+			objects[tmp] = new ObjectStructure(wxTypes::Text);
 			m_SelectedWidget = tmp;
 			
-			((wxStaticText*)(tmp))->Bind(wxEVT_RIGHT_DOWN, &MyPanel::OnClick, this);
-			((wxStaticText*)(tmp))->Bind(wxEVT_LEFT_DCLICK, &MyPanel::OnDoubleClick, this);
-			((wxStaticText*)(tmp))->Bind(wxEVT_MIDDLE_DOWN, &MyPanel::OnMiddleClick, this);
+			((wxStaticText*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
 		});
 
 	m_wxSpinCtrl = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxPoint(76, 785), wxDefaultSize, wxSP_ARROW_KEYS, 1, 255, 1);
@@ -454,12 +450,10 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxSpinCtrl - pos: %d,%d", m_wxSpinCtrl->GetPosition().x, m_wxSpinCtrl->GetPosition().y));
 
 			void* tmp = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 255, 1);
-			objects[tmp] = wxTypes::SpinControl;
+			objects[tmp] = new ObjectStructure(wxTypes::SpinControl);
 			m_SelectedWidget = tmp;
 
 			((wxSpinCtrl*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
-			((wxSpinCtrl*)(tmp))->Bind(wxEVT_LEFT_DCLICK, &MyPanel::OnDoubleClick, this);
-			((wxSpinCtrl*)(tmp))->Bind(wxEVT_MIDDLE_DOWN, &MyPanel::OnMiddleClick, this);
 		});
 
 	m_wxTextCtrl = new wxTextCtrl(this, wxID_ANY, wxT("wxTextCtrl"), wxPoint(140, 785), wxDefaultSize, 0);
@@ -469,12 +463,10 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxTextCtrl - pos: %d,%d", m_wxStaticText->GetPosition().x, m_wxStaticText->GetPosition().y));
 
 			void* tmp = new wxTextCtrl(this, wxID_ANY, wxT("wxTextCtrl"), wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = wxTypes::TextControl;
+			objects[tmp] = new ObjectStructure(wxTypes::TextControl);
 			m_SelectedWidget = tmp;
 			
 			((wxStaticText*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
-			((wxStaticText*)(tmp))->Bind(wxEVT_LEFT_DCLICK, &MyPanel::OnDoubleClick, this);
-			((wxStaticText*)(tmp))->Bind(wxEVT_MIDDLE_DOWN, &MyPanel::OnMiddleClick, this);
 		});
 
 
@@ -491,10 +483,10 @@ MyPanel::MyPanel(wxFrame* parent)
 	this->Bind(wxEVT_CHAR_HOOK, &MyPanel::OnKeyDown, this);
 }
 
-wxTypes MyPanel::FindwxText(void* object_to_find)
+ObjectStructure* MyPanel::FindwxText(void* object_to_find)
 {
-	wxTypes a = wxTypes::Invalid;
-	if (m_SelectedWidget || object_to_find)
+	ObjectStructure* a = nullptr;
+	if (m_SelectedWidget != nullptr || object_to_find)
 	{
 		try
 		{
@@ -511,7 +503,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 	m_Log->Append(wxString::Format("KeyDown: %d\n", (int)event.GetKeyCode()));
 	
 	int keycode = (int)event.GetKeyCode();
-	wxTypes t = FindwxText();
+	ObjectStructure* t = FindwxText();
 	switch (keycode)
 	{
 	case 68: /* D */
@@ -520,89 +512,97 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 	}
 	case 315: /* Up*/
 	{
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxPoint pos = text->GetPosition();
 			pos.y -= m_wxSpinCtrl->GetValue();
 			text->SetPosition(std::move(pos));
+			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
 		break;
 	}
 	case 317: /* Down*/
 	{
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxPoint pos = text->GetPosition();
 			pos.y += m_wxSpinCtrl->GetValue();
 			text->SetPosition(std::move(pos));
+			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
 		break;
 	}
 	case 314: /* Left*/
 	{
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxPoint pos = text->GetPosition();
 			pos.x -= m_wxSpinCtrl->GetValue();
 			text->SetPosition(std::move(pos));
+			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
 		break;
 	}
 	case 316: /* Right*/
 	{
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxPoint pos = text->GetPosition();
 			pos.x += m_wxSpinCtrl->GetValue();
 			text->SetPosition(std::move(pos));
+			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
 		break;
 	}
 	case 330: /* 6*/
 	{
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxSize pos = text->GetSize();
 			pos.x += 1;
 			text->SetSize(std::move(pos));
+			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
 		break;
 	}
 	case 332: /* 8*/
 	{
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxSize pos = text->GetSize();
 			pos.y += 1;
 			text->SetSize(std::move(pos));
+			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
 		break;
 	}
 	case 328: /* 4*/
 	{
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxSize pos = text->GetSize();
 			pos.x -= 1;
 			text->SetSize(std::move(pos));
+			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
 		break;
 	}	
 	case 326: /* ¾*/
 	{
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxSize pos = text->GetSize();
 			pos.y -= 1;
 			text->SetSize(std::move(pos));
+			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
 		break;
 	}
@@ -615,14 +615,24 @@ template <class T> void MyPanel::SetPos(void* ptr, wxPoint &pos)
 	((T*)ptr)->SetPosition(pos);
 }
 
+wxString GetNameFromEnum(wxTypes to_get)
+{
+	char ret[32];
+	auto color_name = magic_enum::enum_name(to_get);
+	memcpy(ret, color_name.data(), color_name.length());
+	ret[color_name.length()] = 0;
+	wxString str(ret);
+	return str;
+}
+
 void MyPanel::OnMouseLeftDown(wxMouseEvent& event)
 {
-	wxTypes t = FindwxText();
-	if (t != wxTypes::Invalid)
+	ObjectStructure* t = FindwxText();
+	if (t != nullptr)
 	{
-		m_Log->Append(wxString::Format(":: Current item is %s", type_names[static_cast<int>(t)]));
+		Sleep(140);
+		m_Log->Append(wxString::Format(":: Current item is %s", GetNameFromEnum(t->type)));
 	}
-
 }
 
 void MyPanel::OnMouseMotion(wxMouseEvent& event)
@@ -630,10 +640,10 @@ void MyPanel::OnMouseMotion(wxMouseEvent& event)
 	wxPoint pos = ScreenToClient(::wxGetMousePosition());
 	wxMouseState mouse = wxGetMouseState();
 
-	wxTypes t = FindwxText();
-	if (t != wxTypes::Invalid && mouse.LeftIsDown())
+	ObjectStructure* t = FindwxText();
+	if (t != nullptr && mouse.LeftIsDown())
 	{
-		switch (t)
+		switch (t->type)
 		{
 			case wxTypes::ComboBox:
 				SetPos<wxComboBox>(m_SelectedWidget, pos);		
@@ -665,9 +675,8 @@ void MyPanel::OnMouseMotion(wxMouseEvent& event)
 			case wxTypes::Text:
 			{
 				SetPos<wxStaticText>(m_SelectedWidget, pos);
-				wxStaticText* t = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
-				m_propgrid->Update(0, t->GetPosition(), t->GetSize(), t->GetMinSize(), t->GetMaxSize(), t->GetForegroundColour(), t->GetBackgroundColour(), 
-					t->GetFont(), t->IsEnabled(), !t->IsShown());
+				wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
+				m_propgrid->Update(std::make_pair((void*)text, t));
 				break;
 			}
 			case wxTypes::SpinControl:
@@ -693,10 +702,28 @@ void MyPanel::OnMouseLeave(wxMouseEvent& event)
 void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 {
 	wxPGProperty* property = event.GetProperty();
+	ObjectStructure* t = FindwxText();
+	if (property == m_pgName)
+	{
+		if (t != nullptr)
+		{
+			wxString str;
+			property->GetValue().Convert(&str);	
+			t->name = std::move(str);
+		}
+	}	
+	if (property == m_pgLabel)
+	{
+		if (t != nullptr)
+		{
+			wxString str;
+			property->GetValue().Convert(&str);
+			((wxStaticText*)m_SelectedWidget)->SetLabelText(str);
+		}
+	}	
 	if (property == m_pgPos)
 	{
-		wxTypes t = FindwxText();
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			int x, y;
 			wxString str;
@@ -709,8 +736,7 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 	}
 	else if (property == m_pgSize)
 	{
-		wxTypes t = FindwxText();
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			int x, y;
 			wxString str;
@@ -723,8 +749,7 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 	}
 	else if (property == m_pgMinSize)
 	{
-		wxTypes t = FindwxText();
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			int x, y;
 			wxString str;
@@ -737,8 +762,7 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 	}
 	else if (property == m_pgMaxSize)
 	{
-		wxTypes t = FindwxText();
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			int x, y;
 			wxString str;
@@ -751,20 +775,18 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 	}
 	else if (property == m_pgForegroundColor)
 	{
-		wxTypes t = FindwxText();
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			wxVariant a = property->GetValue();
 			wxColour color;
 			color << a;
 			((wxStaticText*)m_SelectedWidget)->SetForegroundColour(color);
-			((wxStaticText*)m_SelectedWidget)->Refresh();  /* TODO: It doesn't work, find out how to refresh */
+			((wxStaticText*)m_SelectedWidget)->Refresh();
 		}
 	}		
 	else if (property == m_pgBackgroundColor)
 	{
-		wxTypes t = FindwxText();
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			wxVariant a = property->GetValue();
 			wxColour color;
@@ -775,8 +797,7 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 	}	
 	else if (property == m_pgFont)
 	{
-		wxTypes t = FindwxText();
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			wxVariant a = property->GetValue();
 			wxFont fnt;
@@ -786,8 +807,7 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 	}	
 	else if (property == m_pgTooltip)
 	{
-		wxTypes t = FindwxText();
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			wxString str;
 			property->GetValue().Convert(&str);
@@ -796,8 +816,7 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 	}	
 	else if (property == m_pgEnabled)
 	{
-		wxTypes t = FindwxText();
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			bool is_enabled;
 			property->GetValue().Convert(&is_enabled);
@@ -806,8 +825,7 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 	}	
 	else if (property == m_pgHidden)
 	{
-		wxTypes t = FindwxText();
-		if (t != wxTypes::Invalid)
+		if (t != nullptr)
 		{
 			bool is_hide;
 			property->GetValue().Convert(&is_hide);
@@ -822,68 +840,11 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 void MyPanel::OnClick(wxMouseEvent& event)
 {
 	void* obj = event.GetEventObject();
-	wxTypes t = FindwxText(obj);
-	if (t != wxTypes::Invalid)
+	ObjectStructure* t = FindwxText(obj);
+	if (t != nullptr)
 	{
-		switch (t)
-		{
-			case wxTypes::Text:
-				m_SelectedWidget = obj;
-				break;
-			case wxTypes::Button:
-			case wxTypes::SpinControl:
-			case wxTypes::TextControl:
-				m_SelectedWidget = obj;
-				break;
-		}
-	}
-}
-
-void MyPanel::OnDoubleClick(wxMouseEvent& event)
-{
-	void* obj = event.GetEventObject();
-	wxTypes t = FindwxText(obj);
-	if (t != wxTypes::Invalid)
-	{
-		switch (t)
-		{
-			case wxTypes::Text:
-			{
-				wxTextEntryDialog myDialog(this, _("Enter new text"), _("Text change"));
-				if (myDialog.ShowModal() == wxID_OK)
-				{
-					wxString str = myDialog.GetValue();
-					((wxStaticText*)obj)->SetLabelText(str);
-				}
-				break;
-			}
-		}
-	}
-}
-
-void MyPanel::OnMiddleClick(wxMouseEvent& event)
-{
-	void* obj = event.GetEventObject();
-	wxPoint pos = ((wxStaticText*)obj)->GetPosition();
-	wxTypes t = FindwxText(obj);
-	if (t != wxTypes::Invalid)
-	{
-		switch (t)
-		{
-			case wxTypes::Text:
-			{
-				wxTextEntryDialog myDialog(this, _("Enter new position"), wxString::Format("Current Position - pos: %d,%d", pos.x, pos.y));
-				if (myDialog.ShowModal() == wxID_OK)
-				{
-					wxString str = myDialog.GetValue();
-					int x, y;
-					if (sscanf(str.c_str(), "%d,%d", &x, &y) == 2)
-					{
-						((wxStaticText*)obj)->SetPosition(wxPoint(x, y));
-					}
-				}
-				break;
-			}
-		}
+		m_SelectedWidget = obj;
+		m_Log->Append(wxString::Format("Clicked on %s", GetNameFromEnum(t->type)));
+		m_propgrid->Update(std::make_pair((void*)m_SelectedWidget, t));
 	}
 }
