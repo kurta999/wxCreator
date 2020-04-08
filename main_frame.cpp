@@ -14,6 +14,8 @@
 #include <wx/propgrid/propgrid.h>
 #include <wx/propgrid/advprops.h>
 #include <wx/aui/aui.h>
+#include "wx/treelist.h"
+#include "wx/treectrl.h"
 
 enum
 {
@@ -178,6 +180,8 @@ wxPGProperty* m_pgForegroundColor;
 wxPGProperty* m_pgBackgroundColor;
 wxPGProperty* m_pgFont;
 wxPGProperty* m_pgTooltip;
+wxPGProperty* m_pgEnabled;
+wxPGProperty* m_pgHidden;
 wxPropertyGrid* m_propertyGrid1;
 
 class PropertyGrid
@@ -195,20 +199,28 @@ public:
 		m_pgBackgroundColor = m_propertyGrid->Append(new wxColourProperty(wxT("Bg. Colour"), wxPG_LABEL, color));
 		m_pgFont = m_propertyGrid->Append(new wxFontProperty(wxT("Font"), wxPG_LABEL));
 		m_pgTooltip = m_propertyGrid->Append(new wxStringProperty(wxT("Tooltip"), wxPG_LABEL));
+		m_pgEnabled = m_propertyGrid->Append(new wxBoolProperty(wxT("Enabled"), wxPG_LABEL, true));
+		m_pgHidden = m_propertyGrid->Append(new wxBoolProperty(wxT("Hidden"), wxPG_LABEL, true));
 	}
 
-	void Update(int id, wxPoint pos, wxSize size, wxSize min_size, wxSize max_size, const wxColour f_color, const wxColour b_color, wxFont font)
+	void Update(int id, wxPoint pos, wxSize size, wxSize min_size, wxSize max_size, const wxColour f_color, wxColour b_color, wxFont font, bool bEnable,
+		bool bHidden)
 	{
 		m_pgId->SetValue(id);
 		m_pgPos->SetValue(wxString::Format("%d,%d", pos.x, pos.y));
 		m_pgSize->SetValue(wxString::Format("%d,%d", size.x, size.y));
-		m_pgSize->SetValue(wxString::Format("%d,%d", min_size.x, min_size.y));
-		m_pgSize->SetValue(wxString::Format("%d,%d", max_size.x, max_size.y));
-		wxString str = f_color.GetAsString();
-		m_pgForegroundColor->SetValue(str);
-		wxString str2 = b_color.GetAsString();
-		m_pgBackgroundColor->SetValue(str2);
-		//m_pgFont->SetValue
+		m_pgMinSize->SetValue(wxString::Format("%d,%d", min_size.x, min_size.y));
+		m_pgMaxSize->SetValue(wxString::Format("%d,%d", max_size.x, max_size.y));
+		
+		wxVariant f_clr, b_clr, fnt;
+		f_clr << f_color;
+		b_clr << b_color;
+		fnt << font;
+		m_pgForegroundColor->SetValue(f_clr);
+		m_pgBackgroundColor->SetValue(b_clr);
+		m_pgFont->SetValue(fnt);
+		m_pgEnabled->SetValue(bEnable);
+		m_pgHidden->SetValue(bHidden);
 	}
 public:
 	wxPropertyGrid* m_propertyGrid;
@@ -275,9 +287,8 @@ PropertyGrid* m_propgrid = nullptr;
 
 MyPanel::MyPanel(wxFrame* parent)
     : wxPanel(parent, wxID_ANY)
-{
-
-	m_propgrid = new PropertyGrid(this, 100, wxT("0,0"), wxT("0,0"), wxColor());
+{	
+	m_propgrid = new PropertyGrid(this, 100, wxT("0,0"), wxT("0,0"), wxColor(*wxRED));
 
 	m_wxButton = new wxButton(this, wxID_ANY, wxT("btn"), wxPoint(0, 815), wxSize(25, 25), 0);
 	m_wxButton->SetToolTip("wxButton - DClick for text change, Middle click for pos change");
@@ -497,7 +508,7 @@ wxTypes MyPanel::FindwxText(void* object_to_find)
 
 void MyPanel::OnKeyDown(wxKeyEvent& event)
 {
-	//m_Log->Append(wxString::Format("KeyDown: %d\n", (int)event.GetKeyCode()));
+	m_Log->Append(wxString::Format("KeyDown: %d\n", (int)event.GetKeyCode()));
 	
 	int keycode = (int)event.GetKeyCode();
 	wxTypes t = FindwxText();
@@ -655,7 +666,8 @@ void MyPanel::OnMouseMotion(wxMouseEvent& event)
 			{
 				SetPos<wxStaticText>(m_SelectedWidget, pos);
 				wxStaticText* t = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
-				m_propgrid->Update(0, t->GetPosition(), t->GetSize(), t->GetMinSize(), t->GetMaxSize(), t->GetForegroundColour(), t->GetBackgroundColour(), t->GetFont());
+				m_propgrid->Update(0, t->GetPosition(), t->GetSize(), t->GetMinSize(), t->GetMaxSize(), t->GetForegroundColour(), t->GetBackgroundColour(), 
+					t->GetFont(), t->IsEnabled(), !t->IsShown());
 				break;
 			}
 			case wxTypes::SpinControl:
@@ -733,7 +745,7 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 			property->GetValue().Convert(&str);
 			if (sscanf(str.c_str(), "%d,%d", &x, &y) == 2)
 			{
-				((wxStaticText*)m_SelectedWidget)->SetMinSize(wxSize(x, y));
+				((wxStaticText*)m_SelectedWidget)->SetMaxSize(wxSize(x, y));
 			}
 		}
 	}
@@ -742,9 +754,34 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 		wxTypes t = FindwxText();
 		if (t != wxTypes::Invalid)
 		{
-			long long x, y;
 			wxVariant a = property->GetValue();
-			Sleep(10);
+			wxColour color;
+			color << a;
+			((wxStaticText*)m_SelectedWidget)->SetForegroundColour(color);
+			((wxStaticText*)m_SelectedWidget)->Refresh();  /* TODO: It doesn't work, find out how to refresh */
+		}
+	}		
+	else if (property == m_pgBackgroundColor)
+	{
+		wxTypes t = FindwxText();
+		if (t != wxTypes::Invalid)
+		{
+			wxVariant a = property->GetValue();
+			wxColour color;
+			color << a;
+			((wxStaticText*)m_SelectedWidget)->SetBackgroundColour(color);
+			((wxStaticText*)m_SelectedWidget)->Refresh();
+		}
+	}	
+	else if (property == m_pgFont)
+	{
+		wxTypes t = FindwxText();
+		if (t != wxTypes::Invalid)
+		{
+			wxVariant a = property->GetValue();
+			wxFont fnt;
+			fnt << a;
+			((wxStaticText*)m_SelectedWidget)->SetFont(fnt);
 		}
 	}	
 	else if (property == m_pgTooltip)
@@ -755,6 +792,29 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 			wxString str;
 			property->GetValue().Convert(&str);
 			((wxStaticText*)m_SelectedWidget)->SetToolTip(str);
+		}
+	}	
+	else if (property == m_pgEnabled)
+	{
+		wxTypes t = FindwxText();
+		if (t != wxTypes::Invalid)
+		{
+			bool is_enabled;
+			property->GetValue().Convert(&is_enabled);
+			((wxStaticText*)m_SelectedWidget)->Enable(is_enabled);
+		}
+	}	
+	else if (property == m_pgHidden)
+	{
+		wxTypes t = FindwxText();
+		if (t != wxTypes::Invalid)
+		{
+			bool is_hide;
+			property->GetValue().Convert(&is_hide);
+			if(is_hide)
+				((wxStaticText*)m_SelectedWidget)->Hide();
+			else
+				((wxStaticText*)m_SelectedWidget)->Show();
 		}
 	}
 }
@@ -769,7 +829,6 @@ void MyPanel::OnClick(wxMouseEvent& event)
 		{
 			case wxTypes::Text:
 				m_SelectedWidget = obj;
-				((wxStaticText*)obj)->SetForegroundColour(*wxRED);
 				break;
 			case wxTypes::Button:
 			case wxTypes::SpinControl:
@@ -796,7 +855,6 @@ void MyPanel::OnDoubleClick(wxMouseEvent& event)
 					wxString str = myDialog.GetValue();
 					((wxStaticText*)obj)->SetLabelText(str);
 				}
-				((wxStaticText*)obj)->SetForegroundColour(*wxRED);
 				break;
 			}
 		}

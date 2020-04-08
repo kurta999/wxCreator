@@ -28,10 +28,24 @@ enum class wxTypes : int
 	Gauge,
 	Text,
 	SpinControl,
+	DoubleSpinCtrl,
 	TextControl,
+	ToggleButton,
+	SearchCtrl,
+	ColorPicker,
+	FontPicker,
+	FilePicker,
+	DirPicker,
+	DatePicker,
+	TimePicker,
+	CalendarCtrl,
 	Invalid = 0xFF,
 };
 
+struct
+{
+	int id;
+};
 class MyPanel : public wxPanel
 {
 public:
