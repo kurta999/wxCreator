@@ -12,8 +12,15 @@
 #include <wx/propgrid/advprops.h>
 #include <wx/aui/aui.h>
 #include <wx/stc/stc.h>
-
-constexpr int DEFAULT_WAIT_TIME = 400;
+#include <wx/tglbtn.h>
+#include <wx/srchctrl.h>
+#include <wx/clrpicker.h>
+#include <wx/fontpicker.h>
+#include <wx/filepicker.h>
+#include <wx/datectrl.h>
+#include <wx/dateevt.h>
+#include <wx/timectrl.h>
+#include <wx/calctrl.h>
 
 enum class wxTypes : int
 {
@@ -28,7 +35,7 @@ enum class wxTypes : int
 	Gauge,
 	Text,
 	SpinControl,
-	DoubleSpinCtrl,
+	SpinCtrlDouble,
 	TextControl,
 	ToggleButton,
 	SearchCtrl,
@@ -39,6 +46,8 @@ enum class wxTypes : int
 	DatePicker,
 	TimePicker,
 	CalendarCtrl,
+	GenericDirCtrl,
+	SpinButton,
 	Maximum,
 	Invalid = 0xFF,
 };
@@ -68,6 +77,17 @@ class MyPanel : public wxPanel
 public:
 	MyPanel(wxFrame* parent);
 	wxListBox* m_Log = nullptr;
+	wxSpinCtrlDouble* m_wxSpinCtrlDouble = nullptr;
+	wxSearchCtrl* m_wxSearchCtrl = nullptr;
+	wxColourPickerCtrl* m_wxColourPickerCtrl = nullptr;
+	wxFontPickerCtrl* m_wxFontPickerCtrl = nullptr;
+	wxFilePickerCtrl* m_wxFilePickerCtrl = nullptr;
+	wxDirPickerCtrl* m_wxDirPickerCtrl = nullptr;
+	wxDatePickerCtrl* m_wxDatePickerCtrl = nullptr;
+	wxTimePickerCtrl* m_wxTimePickerCtrl = nullptr;
+	wxCalendarCtrl* m_wxCalendarCtrl = nullptr;
+	void OnClick(wxMouseEvent& event);
+	void* m_SelectedWidget = nullptr;
 
 private:
 	wxButton* m_wxButton = nullptr;
@@ -81,9 +101,10 @@ private:
 	wxSlider* m_wxSlider = nullptr;
 	wxGauge* m_wxGauge = nullptr;
 	wxSpinCtrl* m_wxSpinCtrl = nullptr;
+	
 	wxStaticText* m_wxStaticText = nullptr;
 	wxTextCtrl* m_wxTextCtrl = nullptr;
-	void* m_SelectedWidget = nullptr;
+	wxToggleButton* m_wxToggleButton = nullptr;
 
 	void OnKeyDown(wxKeyEvent& event);
 	void OnMouseMotion(wxMouseEvent& event);
@@ -91,7 +112,8 @@ private:
 	void OnMouseEnter(wxMouseEvent& event);
 	void OnMouseLeave(wxMouseEvent& event);
 	void OnPropertyGridChange(wxPropertyGridEvent& event);
-	void OnClick(wxMouseEvent& event);
+	void MarkSelectedItem(void);
+	void OnPaint(wxPaintEvent& event);
 	template <class T> void SetPos(void* ptr, wxPoint& pos);
 	ObjectStructure* FindwxText(void* object_to_find = nullptr);
 	wxDECLARE_EVENT_TABLE();
@@ -122,6 +144,7 @@ public:
 	void OnSize(wxSizeEvent& event);
 	void OnHelp(wxCommandEvent& event);
 	void Changeing(wxAuiNotebookEvent& event);
+	void OnMenuItemSelected(wxCommandEvent& event);
 	wxDECLARE_EVENT_TABLE();
 	MyPanel* panel;
 private:
