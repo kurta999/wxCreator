@@ -36,6 +36,162 @@ enum
 	ID_wxSpinButton,
 };
 
+static const wxString button_style_flags[] = {
+	"wxBORDER_NONE",
+	"wxBU_BOTTOM",
+	"wxBU_EXACTFIT",
+	"wxBU_LEFT",
+	"wxBU_NOTEXT",
+	"wxBU_RIGHT",
+	"wxBU_TOP",
+};
+static const long button_style_values[] = {
+	wxBORDER_NONE,
+	wxBU_BOTTOM,
+	wxBU_EXACTFIT,
+	wxBU_LEFT,
+	wxBU_NOTEXT,
+	wxBU_RIGHT,
+	wxBU_TOP,
+};
+
+static const wxString slider_style_flags[] = {
+	"wxSL_AUTOTICKS",
+	"wxSL_BOTH",
+	"wxSL_BOTTOM",
+	"wxSL_HORIZONTAL",
+	"wxSL_INVERSE",
+	"wxSL_LABELS",
+	"wxSL_LEFT",
+	"wxSL_MIN_MAX_LABELS",
+	"wxSL_RIGHT",
+	"wxSL_SELRANGE",
+	"wxSL_TOP",
+	"wxSL_VALUE_LABEL",
+	"wxSL_VERTICAL",
+};
+static const long slider_style_values[] = {
+	wxSL_AUTOTICKS,
+	wxSL_BOTH,
+	wxSL_BOTTOM,
+	wxSL_HORIZONTAL,
+	wxSL_INVERSE,
+	wxSL_LABELS,
+	wxSL_LEFT,
+	wxSL_MIN_MAX_LABELS,
+	wxSL_RIGHT,
+	wxSL_SELRANGE,
+	wxSL_TOP,
+	wxSL_VALUE_LABEL,
+	wxSL_VERTICAL,
+};
+
+static const wxString statictext_style_flags[] = {
+	"wxALIGN_CENTER_HORIZONTAL",
+	"wxALIGN_LEFT",
+	"wxALIGN_RIGHT",
+	"wxST_ELLIPSIZE_END",
+	"wxST_ELLIPSIZE_MIDDLE",
+	"wxST_ELLIPSIZE_START",
+	"wxST_NO_AUTORESIZE",
+};
+static const long statictext_style_values[] = {
+	wxALIGN_CENTER_HORIZONTAL,
+	wxALIGN_LEFT,
+	wxALIGN_RIGHT,
+	wxST_ELLIPSIZE_END,
+	wxST_ELLIPSIZE_MIDDLE,
+	wxST_ELLIPSIZE_START,
+	wxST_NO_AUTORESIZE,
+};
+
+static const wxString textctrl_style_flags[] = {
+	"wxTE_AUTO_URL",
+	"wxTE_BESTWRAP",
+	"wxTE_CAPITALIZE",
+	"wxTE_CENTER",
+	"wxTE_CHARWRAP",
+	"wxTE_DONTWRAP",
+	"wxTE_LEFT",
+	"wxTE_MULTILINE",
+	"wxTE_NOHIDESEL",
+	"wxTE_NO_VSCROLL",
+	"wxTE_PASSWORD",
+	"wxTE_PROCESS_ENTER",
+	"wxTE_PROCESS_TAB",
+	"wxTE_READONLY",
+	"wxTE_RICH",
+	"wxTE_RICH2",
+	"wxTE_RIGHT",
+	"wxTE_WORDWRAP",
+};
+static const long textctrl_style_values[] = {
+	wxHSCROLL,
+	wxTE_AUTO_URL,
+	wxTE_BESTWRAP,
+	wxTE_CAPITALIZE,
+	wxTE_CENTER,
+	wxTE_CHARWRAP,
+	wxTE_DONTWRAP,
+	wxTE_LEFT,
+	wxTE_MULTILINE,
+	wxTE_NOHIDESEL,
+	wxTE_NO_VSCROLL,
+	wxTE_PASSWORD,
+	wxTE_PROCESS_ENTER,
+	wxTE_PROCESS_TAB,
+	wxTE_READONLY,
+	wxTE_RICH,
+	wxTE_RICH2,
+	wxTE_RIGHT,
+	wxTE_WORDWRAP,
+};
+
+static const wxString combobox_style_flags[] = {
+	"wxCB_DROPDOWN",
+	"wxCB_READONLY",
+	"wxCB_SIMPLE",
+	"wxCB_SORT",
+	"wxTE_PROCESS_ENTER",
+};
+static const long combobox_style_values[] = {
+	wxCB_DROPDOWN,
+	wxCB_READONLY,
+	wxCB_SIMPLE,
+	wxCB_SORT,
+	wxTE_PROCESS_ENTER,
+};
+
+static const wxString choice_style_flags[] = {
+	"wxCB_SORT",
+};
+static const long choice_style_values[] = {
+	wxCB_SORT
+};
+
+static const wxString checkbox_style_flags[] = {
+	"wxALIGN_RIGHT",
+	"wxCHK_2STATE",
+	"wxCHK_3STATE",
+	"wxCHK_ALLOW_3RD_STATE_FOR_USER",
+};
+static const long checkbox_style_values[] = {
+	wxALIGN_RIGHT,
+	wxCHK_2STATE,
+	wxCHK_3STATE,
+	wxCHK_ALLOW_3RD_STATE_FOR_USER,
+};
+
+static const wxString gauge_style_flags[] = {
+	"wxGA_HORIZONTAL",
+	"wxGA_SMOOTH",
+	"wxGA_VERTICAL",
+};
+static const long gauge_style_values[] = {
+	wxGA_HORIZONTAL,
+	wxGA_SMOOTH,
+	wxGA_VERTICAL,
+};
 
 wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
 EVT_SIZE(MyFrame::OnSize)
@@ -55,7 +211,8 @@ uint16_t wx_list[static_cast<int>(wxTypes::Maximum)];
 std::unordered_map<void*, ObjectStructure*> objects;
 wxAuiNotebook* ctrl;
 
-wxString GetNameFromEnum(wxTypes to_get)
+
+template <class T> wxString GetNameFromEnum(T to_get)
 {
 	char ret[32];
 	auto color_name = magic_enum::enum_name(to_get);
@@ -82,7 +239,58 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 	wxString str;
 	for (auto x : objects)
 	{
-		if (!x.first) continue;
+		if (!x.first || !x.second) continue;
+		if (x.second->type == wxTypes::Button)
+		{
+			wxStaticText* t = reinterpret_cast<wxStaticText*>(x.first);
+			wxString flagsStr;
+			for (uint8_t i = 0; i != WXSIZEOF(button_style_values); i++)
+			{
+				if (t->GetWindowStyleFlag() & button_style_values[i])
+				{
+					if (i)
+						flagsStr += " | ";
+					flagsStr += button_style_flags[i];
+				}
+			}
+			if (flagsStr.IsEmpty())
+				flagsStr = "0";
+			str += wxString::Format("%s = new wxButton(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), %s);\n",
+				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, flagsStr);
+			wxString tooltip = t->GetToolTipText();
+			if(!tooltip.IsEmpty())
+				str += wxString::Format("%s->SetToolTip(\"%s\");\n", x.second->name, tooltip);
+			if(x.second->fg_color_changed)
+				str += wxString::Format("%s->SetForegroundColour(wxColour(%d, %d, %d));\n", 
+					x.second->name, t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue());
+			if(x.second->bg_color_changed)
+				str += wxString::Format("%s->SetBackgroundColour(wxColour(%d, %d, %d));\n", 
+					x.second->name, t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue());
+
+			wxSize min_size = t->GetMinSize();
+			if(min_size.x != -1 || min_size.y != -1)
+				str += wxString::Format("%s->SetMinSize(wxPoint(%d, %d));\n", x.second->name, min_size.x, min_size.y);
+			wxSize max_size = t->GetMaxSize();
+			if(max_size.x != -1 || max_size.y != -1)
+				str += wxString::Format("%s->SetMaxSize(wxPoint(%d, %d));\n", x.second->name, max_size.x, max_size.y);
+			wxFont font = t->GetFont();
+			wxString strFontPointSize;
+			if (font.GetPointSize() != -1)
+				strFontPointSize = wxString::Format("%d", font.GetPointSize());
+			else
+				strFontPointSize = wxString("wxNORMAL_FONT->GetPointSize()");
+			if (font.GetFamily() != wxFONTFAMILY_DEFAULT || !font.GetFaceName().IsEmpty() || font.GetStyle() != wxFONTSTYLE_NORMAL || font.GetWeight() != wxFONTWEIGHT_NORMAL
+				|| font.GetUnderlined())
+			{
+				wxFontWeight a = font.GetWeight();
+				str += wxString::Format("%s->SetFont( wxFont(%s, %s, %s, %s, %s, wxT(\"%s\")));\n", 
+					x.second->name, strFontPointSize, GetNameFromEnum<wxFontFamily>(font.GetFamily()), GetNameFromEnum<wxFontStyle>(font.GetStyle()), 
+					GetNameFromEnum<wxFontWeight>(a),
+					font.GetUnderlined() ? wxString("true") : wxString("false"), font.GetFaceName());
+				Sleep(10);
+			}
+			str += "\n";
+		}		
 		if (x.second->type == wxTypes::Text)
 		{
 			wxStaticText* t = reinterpret_cast<wxStaticText*>(x.first);
@@ -148,10 +356,10 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 		if (x.second->type == wxTypes::SpinCtrlDouble)
 		{
 			wxSpinCtrlDouble* t = reinterpret_cast<wxSpinCtrlDouble*>(x.first);
-			str += wxString::Format("%s = new wxSpinCtrlDouble(panel, wxID_ANY, wxEmptyString, wxPoint(%d, %d), wxSize(%d, %d), wxSP_ARROW_KEYS, 0, 100, 0, 1);\n", 
+			str += wxString::Format("%s = new wxSpinCtrlDouble(this, wxID_ANY, wxEmptyString, wxPoint(%d, %d), wxSize(%d, %d), wxSP_ARROW_KEYS, 0, 100, 0, 1);\n", 
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 		}	
-		if (x.second->type == wxTypes::SpinCtrlDouble)
+		if (x.second->type == wxTypes::SearchCtrl)
 		{
 			wxSearchCtrl* t = reinterpret_cast<wxSearchCtrl*>(x.first);
 			str += wxString::Format("%s = new wxSearchCtrl(this, wxID_ANY, wxEmptyString, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
@@ -202,7 +410,7 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 		if (x.second->type == wxTypes::SpinButton)
 		{
 			wxSpinButton* t = reinterpret_cast<wxSpinButton*>(x.first);
-			str += wxString::Format("%s =new wxSpinButton(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), 0);\n",
+			str += wxString::Format("%s = new wxSpinButton(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), 0);\n",
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 		}
 	}
@@ -230,7 +438,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 		{
 			panel->m_Log->Append(wxString::Format("Clicked on wxSearchCtrl"));
 
-			void* tmp = new wxSearchCtrl(this, wxID_ANY, wxEmptyString, wxPoint(0, 70), wxDefaultSize, 0);
+			void* tmp = new wxSearchCtrl(panel, wxID_ANY, wxEmptyString, wxPoint(0, 70), wxDefaultSize, 0);
 			objects[tmp] = new ObjectStructure(wxTypes::SearchCtrl);
 			panel->m_SelectedWidget = tmp;
 #ifndef __WXMAC__
@@ -244,7 +452,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 		{
 			panel->m_Log->Append(wxString::Format("Clicked on wxFontPickerCtrl"));
 
-			void* tmp = new wxFontPickerCtrl(this, wxID_ANY, wxNullFont, wxPoint(0, 70), wxDefaultSize, wxFNTP_DEFAULT_STYLE);
+			void* tmp = new wxFontPickerCtrl(panel, wxID_ANY, wxNullFont, wxPoint(0, 70), wxDefaultSize, wxFNTP_DEFAULT_STYLE);
 			objects[tmp] = new ObjectStructure(wxTypes::FontPicker);
 			panel->m_SelectedWidget = tmp;
 			((wxFontPickerCtrl*)(tmp))->SetMaxPointSize(100);
@@ -255,7 +463,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 		{
 			panel->m_Log->Append(wxString::Format("Clicked on wxFilePickerCtrl"));
 
-			void* tmp = new wxFilePickerCtrl(this, wxID_ANY, wxEmptyString, wxT("Select a file"), wxT("*.*"), wxPoint(0, 70), wxDefaultSize, wxFLP_DEFAULT_STYLE);
+			void* tmp = new wxFilePickerCtrl(panel, wxID_ANY, wxEmptyString, wxT("Select a file"), wxT("*.*"), wxPoint(0, 70), wxDefaultSize, wxFLP_DEFAULT_STYLE);
 			objects[tmp] = new ObjectStructure(wxTypes::FilePicker);
 			panel->m_SelectedWidget = tmp;
 
@@ -266,7 +474,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 		{
 			panel->m_Log->Append(wxString::Format("Clicked on wxDirPickerCtrl"));
 
-			void* tmp = new wxDirPickerCtrl(this, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxPoint(0, 70), wxDefaultSize, wxDIRP_DEFAULT_STYLE);
+			void* tmp = new wxDirPickerCtrl(panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxPoint(0, 70), wxDefaultSize, wxDIRP_DEFAULT_STYLE);
 			objects[tmp] = new ObjectStructure(wxTypes::DirPicker);
 			panel->m_SelectedWidget = tmp;
 
@@ -277,7 +485,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 		{
 			panel->m_Log->Append(wxString::Format("Clicked on wxDatePickerCtrl"));
 
-			void* tmp = new wxDatePickerCtrl(this, wxID_ANY, wxDefaultDateTime, wxPoint(0, 70), wxDefaultSize, wxDP_DEFAULT);
+			void* tmp = new wxDatePickerCtrl(panel, wxID_ANY, wxDefaultDateTime, wxPoint(0, 70), wxDefaultSize, wxDP_DEFAULT);
 			objects[tmp] = new ObjectStructure(wxTypes::DatePicker);
 			panel->m_SelectedWidget = tmp;
 
@@ -288,7 +496,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 		{
 			panel->m_Log->Append(wxString::Format("Clicked on wxTimePickerCtrl"));
 
-			void* tmp = new wxTimePickerCtrl(this, wxID_ANY, wxDefaultDateTime, wxPoint(0, 70), wxDefaultSize, wxTP_DEFAULT);
+			void* tmp = new wxTimePickerCtrl(panel, wxID_ANY, wxDefaultDateTime, wxPoint(0, 70), wxDefaultSize, wxTP_DEFAULT);
 			objects[tmp] = new ObjectStructure(wxTypes::TimePicker);
 			panel->m_SelectedWidget = tmp;
 
@@ -299,7 +507,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 		{
 			panel->m_Log->Append(wxString::Format("Clicked on wxCalendarCtrl"));
 
-			void* tmp = new wxCalendarCtrl(this, wxID_ANY, wxDefaultDateTime, wxPoint(0, 70), wxDefaultSize, wxCAL_SHOW_HOLIDAYS);
+			void* tmp = new wxCalendarCtrl(panel, wxID_ANY, wxDefaultDateTime, wxPoint(0, 70), wxDefaultSize, wxCAL_SHOW_HOLIDAYS);
 			objects[tmp] = new ObjectStructure(wxTypes::CalendarCtrl);
 			panel->m_SelectedWidget = tmp;
 
@@ -310,7 +518,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 		{
 			panel->m_Log->Append(wxString::Format("Clicked on wxGenericDirCtrl"));
 
-			void* tmp = new wxGenericDirCtrl(this, wxID_ANY, wxEmptyString, wxPoint(0, 70), wxDefaultSize, wxDIRCTRL_3D_INTERNAL | wxSUNKEN_BORDER, wxEmptyString, 0);
+			void* tmp = new wxGenericDirCtrl(panel, wxID_ANY, wxEmptyString, wxPoint(0, 70), wxDefaultSize, wxDIRCTRL_3D_INTERNAL | wxSUNKEN_BORDER, wxEmptyString, 0);
 			objects[tmp] = new ObjectStructure(wxTypes::GenericDirCtrl);
 			panel->m_SelectedWidget = tmp;
 
@@ -321,7 +529,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 		{
 			panel->m_Log->Append(wxString::Format("Clicked on wxGenericDirCtrl"));
 
-			void* tmp = new wxSpinButton(this, wxID_ANY, wxPoint(0, 70), wxDefaultSize, 0);
+			void* tmp = new wxSpinButton(panel, wxID_ANY, wxPoint(0, 70), wxDefaultSize, 0);
 			objects[tmp] = new ObjectStructure(wxTypes::SpinButton);
 			panel->m_SelectedWidget = tmp;
 
@@ -356,7 +564,6 @@ MyFrame::MyFrame(const wxString& title)
 		wxAUI_TB_DEFAULT_STYLE | wxAUI_TB_OVERFLOW | wxAUI_TB_VERTICAL);
 	tb5->SetToolBitmapSize(FromDIP(wxSize(25, 25)));
 	tb5->AddTool(ID_wxSpinCltrDouble, "wxSpinCltrDouble", wxArtProvider::GetBitmap(wxART_INFORMATION), "SpinCltrDouble");
-	tb5->AddSeparator();
 	tb5->AddTool(ID_wxSearchCtrl, "wxSearchCtrl", wxArtProvider::GetBitmap(wxART_CDROM), "wxSearchCtrl");
 	tb5->AddTool(ID_wxFontPickerCtrl, "wxFontPickerCtrl", wxArtProvider::GetBitmap(wxART_FILE_SAVE), "wxFontPickerCtrl");
 	tb5->AddTool(ID_wxFilePickerCtrl, "wxFilePickerCtrl", wxArtProvider::GetBitmap(wxART_MISSING_IMAGE), "wxFilePickerCtrl");
@@ -404,78 +611,10 @@ wxPropertyGrid* m_propertyGrid1;
 wxPGProperty* m_pgButtonStyle;
 wxPGProperty* m_pgSliderStyle;
 wxPGProperty* m_pgStaticTextStyle;
+wxPGProperty* m_pgTextCtrlStyle;
+wxPGProperty* m_pgComboBoxStyle;
 wxPropertyGrid* m_propertyGrid;
 
-static const wxString button_style_flags[] = {
-	"wxBORDER_NONE",
-	"wxBU_BOTTOM",
-	"wxBU_EXACTFIT",
-	"wxBU_LEFT",
-	"wxBU_NOTEXT",
-	"wxBU_RIGHT",
-	"wxBU_TOP",
-};
-
-static const long button_style_values[] = {
-	wxSP_ARROW_KEYS,
-	wxBU_BOTTOM,
-	wxBU_EXACTFIT,
-	wxBU_LEFT,
-	wxBU_NOTEXT,
-	wxBU_RIGHT,
-	wxBU_TOP,
-};
-
-static const wxString slider_style_flags[] = {
-	"wxSL_AUTOTICKS",
-	"wxSL_BOTH",
-	"wxSL_BOTTOM",
-	"wxSL_HORIZONTAL",
-	"wxSL_INVERSE",
-	"wxSL_LABELS",
-	"wxSL_LEFT",
-	"wxSL_MIN_MAX_LABELS",
-	"wxSL_RIGHT",
-	"wxSL_SELRANGE",
-	"wxSL_TOP",
-	"wxSL_VALUE_LABEL",
-	"wxSL_VERTICAL",
-};
-
-static const long slider_style_values[] = {
-	wxSL_AUTOTICKS,
-	wxSL_BOTH,
-	wxSL_BOTTOM,
-	wxSL_HORIZONTAL,
-	wxSL_INVERSE,
-	wxSL_LABELS,
-	wxSL_LEFT,
-	wxSL_MIN_MAX_LABELS,
-	wxSL_RIGHT,
-	wxSL_SELRANGE,
-	wxSL_TOP,
-	wxSL_VALUE_LABEL,
-	wxSL_VERTICAL,
-};
-
-static const wxString statictext_style_flags[] = {
-	"wxALIGN_CENTER_HORIZONTAL",
-	"wxALIGN_LEFT",
-	"wxALIGN_RIGHT",
-	"wxST_ELLIPSIZE_END",
-	"wxST_ELLIPSIZE_MIDDLE",
-	"wxST_ELLIPSIZE_START",
-	"wxST_NO_AUTORESIZE",
-};
-static const long statictext_style_values[] = {
-	wxALIGN_CENTER_HORIZONTAL,
-	wxALIGN_LEFT,
-	wxALIGN_RIGHT,
-	wxST_ELLIPSIZE_END,
-	wxST_ELLIPSIZE_MIDDLE,
-	wxST_ELLIPSIZE_START,
-	wxST_NO_AUTORESIZE,
-};
 
 class PropertyGrid
 {
@@ -519,12 +658,22 @@ public:
 		m_combinedFlags3.Add(WXSIZEOF(statictext_style_flags), statictext_style_flags, statictext_style_values);
 		m_pgStaticTextStyle = m_propertyGrid->Append(new wxFlagsProperty(wxT("StaticText flags"), wxPG_LABEL, m_combinedFlags3));
 		m_propertyGrid->SetPropertyAttribute("StaticText flags", wxPG_BOOL_USE_CHECKBOX, true, wxPG_RECURSE);
+		
+		wxPGChoices m_combinedFlags4;
+		m_combinedFlags4.Add(WXSIZEOF(textctrl_style_flags), textctrl_style_flags, textctrl_style_values);
+		m_pgTextCtrlStyle = m_propertyGrid->Append(new wxFlagsProperty(wxT("TextControl flags"), wxPG_LABEL, m_combinedFlags4));
+		m_propertyGrid->SetPropertyAttribute("TextControl flags", wxPG_BOOL_USE_CHECKBOX, true, wxPG_RECURSE);
+		
+		wxPGChoices m_combinedFlags5;
+		m_combinedFlags5.Add(WXSIZEOF(combobox_style_flags), combobox_style_flags, combobox_style_values);
+		m_pgComboBoxStyle = m_propertyGrid->Append(new wxFlagsProperty(wxT("ComboBox flags"), wxPG_LABEL, m_combinedFlags5));
+		m_propertyGrid->SetPropertyAttribute("ComboBox flags", wxPG_BOOL_USE_CHECKBOX, true, wxPG_RECURSE);
 	}
 
 	void Update(std::pair<void*, ObjectStructure*> pair)
 	{
 		wxStaticText* t = reinterpret_cast<wxStaticText*>(pair.first);
-		m_pgType->SetValue(GetNameFromEnum(pair.second->type));
+		m_pgType->SetValue(GetNameFromEnum<wxTypes>(pair.second->type));
 		m_pgId->SetValue(pair.second->id);
 		m_pgName->SetValue(pair.second->name);
 		m_pgLabel->SetValue(t->GetLabelText());
@@ -540,6 +689,7 @@ public:
 		m_pgForegroundColor->SetValue(f_clr);
 		m_pgBackgroundColor->SetValue(b_clr);
 		m_pgFont->SetValue(fnt);
+		m_pgTooltip->SetValue(t->GetToolTipText());
 		m_pgEnabled->SetValue(t->IsEnabled());
 		m_pgHidden->SetValue(!t->IsShown());
 	}
@@ -805,12 +955,22 @@ ObjectStructure* MyPanel::FindwxText(void* object_to_find)
 
 void MyPanel::OnKeyDown(wxKeyEvent& event)
 {
-	//m_Log->Append(wxString::Format("KeyDown: %d\n", (int)event.GetKeyCode()));
+	m_Log->Append(wxString::Format("KeyDown: %d\n", (int)event.GetKeyCode()));
 	
 	int keycode = (int)event.GetKeyCode();
 	ObjectStructure* t = FindwxText();
 	switch (keycode)
 	{
+	case 127: /* Delete */
+	{
+		if (t != nullptr)
+		{
+			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
+			objects.erase(m_SelectedWidget);
+			text->Destroy();
+		}
+		break;
+	}
 	case 315: /* Up*/
 	{
 		if (t != nullptr)
@@ -921,7 +1081,7 @@ void MyPanel::OnMouseLeftDown(wxMouseEvent& event)
 	ObjectStructure* t = FindwxText();
 	if (t != nullptr)
 	{
-		m_Log->Append(wxString::Format(":: Current item is %s", GetNameFromEnum(t->type)));
+		m_Log->Append(wxString::Format(":: Current item is %s", GetNameFromEnum<wxTypes>(t->type)));
 	}
 }
 
@@ -1105,6 +1265,7 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 			color << a;
 			((wxStaticText*)m_SelectedWidget)->SetForegroundColour(color);
 			((wxStaticText*)m_SelectedWidget)->Refresh();
+			t->fg_color_changed = 1;
 		}
 	}		
 	else if (property == m_pgBackgroundColor)
@@ -1116,6 +1277,7 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 			color << a;
 			((wxStaticText*)m_SelectedWidget)->SetBackgroundColour(color);
 			((wxStaticText*)m_SelectedWidget)->Refresh();
+			t->bg_color_changed = 1;
 		}
 	}	
 	else if (property == m_pgFont)
@@ -1194,7 +1356,7 @@ void MyPanel::OnClick(wxMouseEvent& event)
 	if (t != nullptr)
 	{
 		m_SelectedWidget = obj;
-		m_Log->Append(wxString::Format("Clicked on %s", GetNameFromEnum(t->type)));
+		m_Log->Append(wxString::Format("Clicked on %s", GetNameFromEnum<wxTypes>(t->type)));
 		MarkSelectedItem();
 		wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 		m_propgrid->Update(std::make_pair((void*)text, t));

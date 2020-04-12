@@ -51,7 +51,7 @@ enum class wxTypes : int
 	Maximum,
 	Invalid = 0xFF,
 };
-wxString GetNameFromEnum(wxTypes to_get);
+template <class T> wxString GetNameFromEnum(T to_get);
 
 class ObjectStructure
 {
@@ -59,14 +59,16 @@ public:
 	wxTypes type;
 	int id; /**Item ID */
 	wxString name; /**< Item name */
-
+	uint8_t fg_color_changed;
+	uint8_t bg_color_changed;
 	ObjectStructure(wxTypes _type, wxString _name = wxT(" ")) :
 		type(_type), name(std::move(name))
 	{
 		extern uint16_t wx_list[];
 		extern const char* type_names[12];
 		id = wx_list[static_cast<int>(_type)]++;
-		name = wxString::Format("%s_%d", GetNameFromEnum(type), id);
+		name = wxString::Format("%s_%d", GetNameFromEnum<wxTypes>(type), id);
+		fg_color_changed = bg_color_changed = 0;
 	}
 };
 
@@ -88,6 +90,7 @@ public:
 	wxCalendarCtrl* m_wxCalendarCtrl = nullptr;
 	void OnClick(wxMouseEvent& event);
 	void* m_SelectedWidget = nullptr;
+	wxSpinCtrl* m_wxSpinCtrl = nullptr;
 
 private:
 	wxButton* m_wxButton = nullptr;
@@ -100,8 +103,6 @@ private:
 	wxStaticLine* m_wxStaticLine = nullptr;
 	wxSlider* m_wxSlider = nullptr;
 	wxGauge* m_wxGauge = nullptr;
-	wxSpinCtrl* m_wxSpinCtrl = nullptr;
-	
 	wxStaticText* m_wxStaticText = nullptr;
 	wxTextCtrl* m_wxTextCtrl = nullptr;
 	wxToggleButton* m_wxToggleButton = nullptr;
