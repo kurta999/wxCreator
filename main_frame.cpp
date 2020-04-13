@@ -415,7 +415,7 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 		}
 	}
 	cpp_panel->m_StyledTextCtrl->ClearAll();
-	cpp_panel->m_StyledTextCtrl->AppendText(str);
+	cpp_panel->m_StyledTextCtrl->AddText(str);
 }
 
 void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
@@ -739,6 +739,20 @@ CppPanel::CppPanel(wxFrame* parent)
 	m_StyledTextCtrl->MarkerDefine(wxSTC_MARKNUM_FOLDERTAIL, wxSTC_MARK_EMPTY);
 	m_StyledTextCtrl->SetSelBackground(true, wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT));
 	m_StyledTextCtrl->SetSelForeground(true, wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT));
+
+	// Set the lexer to the C++ lexer
+	m_StyledTextCtrl->SetLexer(wxSTC_LEX_CPP);
+
+	// Set the color to use for various elements
+	m_StyledTextCtrl->StyleSetForeground(wxSTC_C_COMMENTLINE, wxColor(60, 162, 2));
+	m_StyledTextCtrl->StyleSetForeground(wxSTC_C_PREPROCESSOR, wxColor(0, 0, 255));
+	m_StyledTextCtrl->StyleSetForeground(wxSTC_C_STRING, wxColor(255, 60, 10));
+	m_StyledTextCtrl->StyleSetForeground(wxSTC_C_WORD, wxColor(0, 0, 255));
+
+	// Give a list of keywords. They will be given the style specified for
+	// wxSTC_C_WORD items.
+	m_StyledTextCtrl->SetKeyWords(0, wxT("return int char this new"));
+
 }
 
 PropertyGrid* m_propgrid = nullptr;
