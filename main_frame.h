@@ -91,6 +91,7 @@ public:
 	void OnClick(wxMouseEvent& event);
 	void* m_SelectedWidget = nullptr;
 	wxSpinCtrl* m_wxSpinCtrl = nullptr;
+	int m_speed = 1;
 
 private:
 	wxButton* m_wxButton = nullptr;
@@ -117,6 +118,7 @@ private:
 	void OnPaint(wxPaintEvent& event);
 	template <class T> void SetPos(void* ptr, wxPoint& pos);
 	ObjectStructure* FindwxText(void* object_to_find = nullptr);
+	
 	wxDECLARE_EVENT_TABLE();
 };
 

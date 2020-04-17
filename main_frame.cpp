@@ -560,8 +560,7 @@ MyFrame::MyFrame(const wxString& title)
 
 	const wxIcon icon(wxT("./icon.ico"), wxBITMAP_TYPE_ICO);
 	SetIcon(icon);
-	wxAuiToolBar* tb5 = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxSize(25, 25),
-		wxAUI_TB_DEFAULT_STYLE | wxAUI_TB_OVERFLOW | wxAUI_TB_VERTICAL);
+	wxAuiToolBar* tb5 = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxSize(25, 25), wxAUI_TB_DEFAULT_STYLE | wxAUI_TB_OVERFLOW | wxAUI_TB_VERTICAL);
 	tb5->SetToolBitmapSize(FromDIP(wxSize(25, 25)));
 	tb5->AddTool(ID_wxSpinCltrDouble, "wxSpinCltrDouble", wxArtProvider::GetBitmap(wxART_INFORMATION), "SpinCltrDouble");
 	tb5->AddTool(ID_wxSearchCtrl, "wxSearchCtrl", wxArtProvider::GetBitmap(wxART_CDROM), "wxSearchCtrl");
@@ -969,12 +968,218 @@ ObjectStructure* MyPanel::FindwxText(void* object_to_find)
 
 void MyPanel::OnKeyDown(wxKeyEvent& event)
 {
-	m_Log->Append(wxString::Format("KeyDown: %d\n", (int)event.GetKeyCode()));
+	//m_Log->Append(wxString::Format("OnKeyDown: %d\n", (int)event.GetKeyCode()));
 	
 	int keycode = (int)event.GetKeyCode();
 	ObjectStructure* t = FindwxText();
+	if (t == nullptr) return;
 	switch (keycode)
 	{
+	case 388: /* + */
+	{
+		m_Log->Append(wxString::Format("Move speed has increased to %d.\n", ++m_speed));
+		break;
+	}	
+	case 390: /* - */
+	{
+		if (!--m_speed)
+			m_speed = 1;
+		m_Log->Append(wxString::Format("Move speed has decresed to %d.\n", m_speed));
+		break;
+	}
+	case 68: /* D */
+	{
+		switch (t->type)
+		{
+			case wxTypes::Button:
+			{
+				wxButton* text = reinterpret_cast<wxButton*>(m_SelectedWidget);
+				wxButton* new_btn = new wxButton(this, wxID_ANY, text->GetLabelText(), text->GetPosition(), text->GetSize(), text->GetWindowStyleFlag());
+				new_btn->SetForegroundColour(text->GetForegroundColour());
+				new_btn->SetBackgroundColour(text->GetBackgroundColour());
+				new_btn->SetFont(text->GetFont());
+				objects[new_btn] = new ObjectStructure(wxTypes::Button);
+				m_SelectedWidget = new_btn;
+				new_btn->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;			
+			}
+			case wxTypes::ComboBox:
+			{
+				wxComboBox* text = reinterpret_cast<wxComboBox*>(m_SelectedWidget);
+				wxComboBox* new_btn = new wxComboBox(this, wxID_ANY, text->GetLabelText(), text->GetPosition(), text->GetSize());
+				new_btn->SetForegroundColour(text->GetForegroundColour());
+				new_btn->SetBackgroundColour(text->GetBackgroundColour());
+				new_btn->SetFont(text->GetFont());
+				objects[new_btn] = new ObjectStructure(wxTypes::ComboBox);
+				m_SelectedWidget = new_btn;
+				new_btn->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;			
+			}		
+			case wxTypes::Choise:
+			{
+				wxChoice* text = reinterpret_cast<wxChoice*>(m_SelectedWidget);
+				wxArrayString m_choiceChoices2;
+				m_choiceChoices2.Add("First");
+				m_choiceChoices2.Add("Second");
+				wxChoice* new_btn = new wxChoice(this, wxID_ANY, text->GetPosition(), text->GetSize(), m_choiceChoices2, text->GetWindowStyleFlag());
+				new_btn->SetForegroundColour(text->GetForegroundColour());
+				new_btn->SetBackgroundColour(text->GetBackgroundColour());
+				new_btn->SetFont(text->GetFont());
+				objects[new_btn] = new ObjectStructure(wxTypes::Choise);
+				m_SelectedWidget = new_btn;
+				new_btn->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;			
+			}
+			case wxTypes::ListBox:
+			{
+				wxListBox* text = reinterpret_cast<wxListBox*>(m_SelectedWidget);
+				wxArrayString m_choiceChoices2;
+				m_choiceChoices2.Add("First");
+				m_choiceChoices2.Add("Second");
+				wxListBox* new_text = new wxListBox(this, wxID_ANY, text->GetPosition(), text->GetSize(), m_choiceChoices2, text->GetWindowStyleFlag());
+				new_text->SetForegroundColour(text->GetForegroundColour());
+				new_text->SetBackgroundColour(text->GetBackgroundColour());
+				new_text->SetFont(text->GetFont());
+				objects[new_text] = new ObjectStructure(wxTypes::ListBox);
+				m_SelectedWidget = new_text;
+				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;
+			}
+			case wxTypes::CheckBox:
+			{
+				wxCheckBox* text = reinterpret_cast<wxCheckBox*>(m_SelectedWidget);
+				wxCheckBox* new_text = new wxCheckBox(this, wxID_ANY, text->GetLabelText(), text->GetPosition(), text->GetSize(), text->GetWindowStyleFlag());
+				new_text->SetForegroundColour(text->GetForegroundColour());
+				new_text->SetBackgroundColour(text->GetBackgroundColour());
+				new_text->SetFont(text->GetFont());
+				objects[new_text] = new ObjectStructure(wxTypes::CheckBox);
+				m_SelectedWidget = new_text;
+				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;
+			}
+			case wxTypes::RadioButton:
+			{
+				wxRadioButton* text = reinterpret_cast<wxRadioButton*>(m_SelectedWidget);
+				wxRadioButton* new_text = new wxRadioButton(this, wxID_ANY, text->GetLabelText(), text->GetPosition(), text->GetSize(), text->GetWindowStyleFlag());
+				new_text->SetForegroundColour(text->GetForegroundColour());
+				new_text->SetBackgroundColour(text->GetBackgroundColour());
+				new_text->SetFont(text->GetFont());
+				objects[new_text] = new ObjectStructure(wxTypes::RadioButton);
+				m_SelectedWidget = new_text;
+				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;
+			}
+			case wxTypes::StaticLine:
+			{
+				wxStaticLine* text = reinterpret_cast<wxStaticLine*>(m_SelectedWidget);
+				wxStaticLine* new_text = new wxStaticLine(this, wxID_ANY, text->GetPosition(), text->GetSize(), text->GetWindowStyleFlag());
+				new_text->SetForegroundColour(text->GetForegroundColour());
+				new_text->SetBackgroundColour(text->GetBackgroundColour());
+				new_text->SetFont(text->GetFont());
+				objects[new_text] = new ObjectStructure(wxTypes::StaticLine);
+				m_SelectedWidget = new_text;
+				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;
+			}	
+			case wxTypes::Slider:
+			{
+				wxSlider* text = reinterpret_cast<wxSlider*>(m_SelectedWidget);
+				wxSlider* new_text = new wxSlider(this, wxID_ANY, text->GetValue(), text->GetMin(), text->GetMax(), text->GetPosition(), text->GetSize(), text->GetWindowStyleFlag());
+				new_text->SetForegroundColour(text->GetForegroundColour());
+				new_text->SetBackgroundColour(text->GetBackgroundColour());
+				new_text->SetFont(text->GetFont());
+				objects[new_text] = new ObjectStructure(wxTypes::Slider);
+				m_SelectedWidget = new_text;
+				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;
+			}			
+			case wxTypes::Gauge:
+			{
+				wxGauge* text = reinterpret_cast<wxGauge*>(m_SelectedWidget);
+				wxGauge* new_text = new wxGauge(this, wxID_ANY, text->GetRange(), text->GetPosition(), text->GetSize(), text->GetWindowStyleFlag());
+				new_text->SetForegroundColour(text->GetForegroundColour());
+				new_text->SetBackgroundColour(text->GetBackgroundColour());
+				new_text->SetFont(text->GetFont());
+				objects[new_text] = new ObjectStructure(wxTypes::Gauge);
+				m_SelectedWidget = new_text;
+				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;
+			}	
+			case wxTypes::Text:
+			{
+				wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
+				wxStaticText* new_text = new wxStaticText(this, wxID_ANY, text->GetLabelText(), text->GetPosition(), text->GetSize(), text->GetWindowStyleFlag());
+				new_text->SetForegroundColour(text->GetForegroundColour());
+				new_text->SetBackgroundColour(text->GetBackgroundColour());
+				new_text->SetFont(text->GetFont());
+				objects[new_text] = new ObjectStructure(wxTypes::Text);
+				m_SelectedWidget = new_text;
+				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;
+			}
+			case wxTypes::SpinControl:
+			{
+				wxSpinCtrl* text = reinterpret_cast<wxSpinCtrl*>(m_SelectedWidget);
+				wxSpinCtrl* new_text = new wxSpinCtrl(this, wxID_ANY, text->GetLabelText(), text->GetPosition(), text->GetSize(), text->GetWindowStyleFlag());
+				new_text->SetForegroundColour(text->GetForegroundColour());
+				new_text->SetBackgroundColour(text->GetBackgroundColour());
+				new_text->SetFont(text->GetFont());
+				objects[new_text] = new ObjectStructure(wxTypes::SpinControl);
+				m_SelectedWidget = new_text;
+				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;
+			}			
+			case wxTypes::SpinCtrlDouble:
+			{
+				wxSpinCtrlDouble* text = reinterpret_cast<wxSpinCtrlDouble*>(m_SelectedWidget);
+				wxSpinCtrlDouble* new_text = new wxSpinCtrlDouble(this, wxID_ANY, text->GetLabelText(), text->GetPosition(), text->GetSize(), text->GetWindowStyleFlag());
+				new_text->SetForegroundColour(text->GetForegroundColour());
+				new_text->SetBackgroundColour(text->GetBackgroundColour());
+				new_text->SetFont(text->GetFont());
+				objects[new_text] = new ObjectStructure(wxTypes::SpinCtrlDouble);
+				m_SelectedWidget = new_text;
+				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;
+			}
+			case wxTypes::TextControl:
+			{
+				wxTextCtrl* text = reinterpret_cast<wxTextCtrl*>(m_SelectedWidget);
+				wxTextCtrl* new_text = new wxTextCtrl(this, wxID_ANY, text->GetLabelText(), text->GetPosition(), text->GetSize(), text->GetWindowStyleFlag());
+				new_text->SetForegroundColour(text->GetForegroundColour());
+				new_text->SetBackgroundColour(text->GetBackgroundColour());
+				new_text->SetFont(text->GetFont());
+				objects[new_text] = new ObjectStructure(wxTypes::TextControl);
+				m_SelectedWidget = new_text;
+				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;
+			}			
+			case wxTypes::ToggleButton:
+			{
+				wxToggleButton* text = reinterpret_cast<wxToggleButton*>(m_SelectedWidget);
+				wxToggleButton* new_text = new wxToggleButton(this, wxID_ANY, text->GetLabelText(), text->GetPosition(), text->GetSize(), text->GetWindowStyleFlag());
+				new_text->SetForegroundColour(text->GetForegroundColour());
+				new_text->SetBackgroundColour(text->GetBackgroundColour());
+				new_text->SetFont(text->GetFont());
+				objects[new_text] = new ObjectStructure(wxTypes::ToggleButton);
+				m_SelectedWidget = new_text;
+				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;
+			}			
+			case wxTypes::SearchCtrl:
+			{
+				wxSearchCtrl* text = reinterpret_cast<wxSearchCtrl*>(m_SelectedWidget);
+				wxSearchCtrl* new_text = new wxSearchCtrl(this, wxID_ANY, text->GetLabelText(), text->GetPosition(), text->GetSize(), text->GetWindowStyleFlag());
+				new_text->SetForegroundColour(text->GetForegroundColour());
+				new_text->SetBackgroundColour(text->GetBackgroundColour());
+				new_text->SetFont(text->GetFont());
+				objects[new_text] = new ObjectStructure(wxTypes::SearchCtrl);
+				m_SelectedWidget = new_text;
+				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				break;
+			}
+		}
+		break;
+	}
 	case 127: /* Delete */
 	{
 		if (t != nullptr)
@@ -991,7 +1196,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxPoint pos = text->GetPosition();
-			pos.y -= 1;
+			pos.y -= m_speed;
 			text->SetPosition(std::move(pos));
 			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
@@ -1003,7 +1208,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxPoint pos = text->GetPosition();
-			pos.y += 1;
+			pos.y += m_speed;
 			text->SetPosition(std::move(pos));
 			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
@@ -1015,7 +1220,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxPoint pos = text->GetPosition();
-			pos.x -= 1;
+			pos.x -= m_speed;
 			text->SetPosition(std::move(pos));
 			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
@@ -1027,7 +1232,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxPoint pos = text->GetPosition();
-			pos.x += 1;
+			pos.x += m_speed;
 			text->SetPosition(std::move(pos));
 			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
@@ -1039,7 +1244,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxSize pos = text->GetSize();
-			pos.x += 1;
+			pos.x += m_speed;
 			text->SetSize(std::move(pos));
 			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
@@ -1051,7 +1256,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxSize pos = text->GetSize();
-			pos.y += 1;
+			pos.y += m_speed;
 			text->SetSize(std::move(pos));
 			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
@@ -1063,19 +1268,19 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxSize pos = text->GetSize();
-			pos.x -= 1;
+			pos.x -= m_speed;
 			text->SetSize(std::move(pos));
 			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
 		break;
 	}	
-	case 326: /* ¾*/
+	case 326: /* 2 */
 	{
 		if (t != nullptr)
 		{
 			wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 			wxSize pos = text->GetSize();
-			pos.y -= 1;
+			pos.y -= m_speed;
 			text->SetSize(std::move(pos));
 			m_propgrid->Update(std::make_pair((void*)text, t));
 		}
