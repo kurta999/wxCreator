@@ -458,10 +458,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 			panel->m_Log->Append(wxString::Format("Clicked on wxSpinCtrlDouble"));
 
 			void* tmp = new wxSpinCtrlDouble(panel, wxID_ANY, wxEmptyString, wxPoint(0, 70), wxDefaultSize, wxSP_ARROW_KEYS, 0, 100, 0, 1);
-			objects[tmp] = new ObjectStructure(wxTypes::SpinCtrlDouble);
-			panel->m_SelectedWidget = tmp;
-
-			((wxSpinCtrlDouble*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, panel);
+			objects[tmp] = new ObjectStructure(panel, tmp, wxTypes::SpinCtrlDouble);
 			break;
 		}
 		case ID_wxSearchCtrl:
@@ -469,13 +466,11 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 			panel->m_Log->Append(wxString::Format("Clicked on wxSearchCtrl"));
 
 			void* tmp = new wxSearchCtrl(panel, wxID_ANY, wxEmptyString, wxPoint(0, 70), wxDefaultSize, 0);
-			objects[tmp] = new ObjectStructure(wxTypes::SearchCtrl);
-			panel->m_SelectedWidget = tmp;
+			objects[tmp] = new ObjectStructure(panel, tmp, wxTypes::SearchCtrl);
 #ifndef __WXMAC__
 			((wxSearchCtrl*)(tmp))->ShowSearchButton(true);
 #endif
 			((wxSearchCtrl*)(tmp))->ShowCancelButton(false);
-			((wxSearchCtrl*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, panel);
 			break;
 		}
 		case ID_wxFontPickerCtrl:
@@ -483,10 +478,8 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 			panel->m_Log->Append(wxString::Format("Clicked on wxFontPickerCtrl"));
 
 			void* tmp = new wxFontPickerCtrl(panel, wxID_ANY, wxNullFont, wxPoint(0, 70), wxDefaultSize, wxFNTP_DEFAULT_STYLE);
-			objects[tmp] = new ObjectStructure(wxTypes::FontPicker);
-			panel->m_SelectedWidget = tmp;
+			objects[tmp] = new ObjectStructure(panel, tmp, wxTypes::FontPicker);
 			((wxFontPickerCtrl*)(tmp))->SetMaxPointSize(100);
-			((wxFontPickerCtrl*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, panel);
 			break;
 		}
 		case ID_wxFilePickerCtrl:
@@ -494,10 +487,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 			panel->m_Log->Append(wxString::Format("Clicked on wxFilePickerCtrl"));
 
 			void* tmp = new wxFilePickerCtrl(panel, wxID_ANY, wxEmptyString, wxT("Select a file"), wxT("*.*"), wxPoint(0, 70), wxDefaultSize, wxFLP_DEFAULT_STYLE);
-			objects[tmp] = new ObjectStructure(wxTypes::FilePicker);
-			panel->m_SelectedWidget = tmp;
-
-			((wxFilePickerCtrl*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, panel);
+			objects[tmp] = new ObjectStructure(panel, tmp, wxTypes::FilePicker);
 			break;
 		}
 		case ID_wxDirPickerCtrl:
@@ -505,10 +495,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 			panel->m_Log->Append(wxString::Format("Clicked on wxDirPickerCtrl"));
 
 			void* tmp = new wxDirPickerCtrl(panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxPoint(0, 70), wxDefaultSize, wxDIRP_DEFAULT_STYLE);
-			objects[tmp] = new ObjectStructure(wxTypes::DirPicker);
-			panel->m_SelectedWidget = tmp;
-
-			((wxDirPickerCtrl*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, panel);
+			objects[tmp] = new ObjectStructure(panel, tmp, wxTypes::DirPicker);
 			break;
 		}
 		case ID_wxDatePickerCtrl:
@@ -516,10 +503,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 			panel->m_Log->Append(wxString::Format("Clicked on wxDatePickerCtrl"));
 
 			void* tmp = new wxDatePickerCtrl(panel, wxID_ANY, wxDefaultDateTime, wxPoint(0, 70), wxDefaultSize, wxDP_DEFAULT);
-			objects[tmp] = new ObjectStructure(wxTypes::DatePicker);
-			panel->m_SelectedWidget = tmp;
-
-			((wxDatePickerCtrl*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, panel);
+			objects[tmp] = new ObjectStructure(panel, tmp, wxTypes::DatePicker);			
 			break;
 		}
 		case ID_wxTimePickerCtrl:
@@ -527,10 +511,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 			panel->m_Log->Append(wxString::Format("Clicked on wxTimePickerCtrl"));
 
 			void* tmp = new wxTimePickerCtrl(panel, wxID_ANY, wxDefaultDateTime, wxPoint(0, 70), wxDefaultSize, wxTP_DEFAULT);
-			objects[tmp] = new ObjectStructure(wxTypes::TimePicker);
-			panel->m_SelectedWidget = tmp;
-
-			((wxTimePickerCtrl*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, panel);
+			objects[tmp] = new ObjectStructure(panel, tmp, wxTypes::TimePicker);
 			break;
 		}
 		case ID_wxCalendarCtrl:
@@ -538,10 +519,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 			panel->m_Log->Append(wxString::Format("Clicked on wxCalendarCtrl"));
 
 			void* tmp = new wxCalendarCtrl(panel, wxID_ANY, wxDefaultDateTime, wxPoint(0, 70), wxDefaultSize, wxCAL_SHOW_HOLIDAYS);
-			objects[tmp] = new ObjectStructure(wxTypes::CalendarCtrl);
-			panel->m_SelectedWidget = tmp;
-
-			((wxCalendarCtrl*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, panel);
+			objects[tmp] = new ObjectStructure(panel, tmp, wxTypes::CalendarCtrl);
 			break;
 		}
 		case ID_wxGenericDirCtrl:
@@ -549,10 +527,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 			panel->m_Log->Append(wxString::Format("Clicked on wxGenericDirCtrl"));
 
 			void* tmp = new wxGenericDirCtrl(panel, wxID_ANY, wxEmptyString, wxPoint(0, 70), wxDefaultSize, wxDIRCTRL_3D_INTERNAL | wxSUNKEN_BORDER, wxEmptyString, 0);
-			objects[tmp] = new ObjectStructure(wxTypes::GenericDirCtrl);
-			panel->m_SelectedWidget = tmp;
-
-			((wxGenericDirCtrl*)(tmp))->Bind(wxEVT_RIGHT_DOWN, &MyPanel::OnClick, panel);
+			objects[tmp] = new ObjectStructure(panel, tmp, wxTypes::GenericDirCtrl);
 			break;
 		}
 		case ID_wxSpinButton:
@@ -560,10 +535,7 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 			panel->m_Log->Append(wxString::Format("Clicked on wxGenericDirCtrl"));
 
 			void* tmp = new wxSpinButton(panel, wxID_ANY, wxPoint(0, 70), wxDefaultSize, 0);
-			objects[tmp] = new ObjectStructure(wxTypes::SpinButton);
-			panel->m_SelectedWidget = tmp;
-
-			((wxSpinButton*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, panel);
+			objects[tmp] = new ObjectStructure(panel, tmp, wxTypes::SpinButton);
 			break;
 		}
 
