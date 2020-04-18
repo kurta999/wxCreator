@@ -34,6 +34,7 @@ enum
 	ID_wxCalendarCtrl,
 	ID_wxGenericDirCtrl,
 	ID_wxSpinButton,
+	TreeTest_Ctrl
 };
 
 static const wxString button_style_flags[] = {
@@ -205,6 +206,7 @@ EVT_ENTER_WINDOW(MyPanel::OnMouseEnter)
 EVT_LEAVE_WINDOW(MyPanel::OnMouseLeave)
 EVT_PG_CHANGED(PGID, MyPanel::OnPropertyGridChange)
 EVT_PAINT(MyPanel::OnPaint)
+EVT_TREE_SEL_CHANGED(TreeTest_Ctrl, MyPanel::OnListCtrlSelChanged)
 wxEND_EVENT_TABLE()
 
 uint16_t wx_list[static_cast<int>(wxTypes::Maximum)];
@@ -220,6 +222,26 @@ template <class T> wxString GetNameFromEnum(T to_get)
 	ret[color_name.length()] = 0;
 	wxString str(ret);
 	return str;
+}
+
+void* GetWidgetByName(wxString& strName)
+{
+	for (auto x : objects)
+	{
+		if (x.second->name == strName)
+			return x.first;
+	}
+	return nullptr;
+}
+
+void* GetWidgetByItemID(wxTreeItemId id)
+{
+	for (auto x : objects)
+	{
+		if (x.second->item_id == id)
+			return x.first;
+	}
+	return nullptr;
 }
 
 void MyFrame::OnSize(wxSizeEvent& size)
@@ -239,18 +261,20 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 	wxString str;
 	for (auto x : objects)
 	{
-		if (!x.first || !x.second) continue;
+		if (!x.first) continue;
 		if (x.second->type == wxTypes::Button)
 		{
 			wxStaticText* t = reinterpret_cast<wxStaticText*>(x.first);
 			wxString flagsStr;
+			int counter = 0;
 			for (uint8_t i = 0; i != WXSIZEOF(button_style_values); i++)
 			{
 				if (t->GetWindowStyleFlag() & button_style_values[i])
 				{
-					if (i)
+					if (counter)
 						flagsStr += " | ";
 					flagsStr += button_style_flags[i];
+					counter++;
 				}
 			}
 			if (flagsStr.IsEmpty())
@@ -309,7 +333,7 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 			str += wxString("wxArrayString m_choiceChoices;\n");
 			str += wxString::Format("%s = new wxChoice(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), m_choiceChoices, 0);\n", 
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
-			str += wxString("m_wxChoice->SetSelection(0);\n");
+			str += wxString::Format("%s->SetSelection(0);\n", x.second->name);
 		}
 		if (x.second->type == wxTypes::ListBox)
 		{
@@ -349,8 +373,14 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 		}		
 		if (x.second->type == wxTypes::TextControl)
 		{
-			wxSpinCtrl* t = reinterpret_cast<wxSpinCtrl*>(x.first);
-			str += wxString::Format("%s = new wxTextCtrl(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxDefaultSize, 0);\n", 
+			wxTextCtrl* t = reinterpret_cast<wxTextCtrl*>(x.first);
+			str += wxString::Format("%s = new wxTextCtrl(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), 0);\n", 
+				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+		}		
+		if (x.second->type == wxTypes::ToggleButton)
+		{
+			wxToggleButton* t = reinterpret_cast<wxToggleButton*>(x.first);
+			str += wxString::Format("%s = new wxToggleButton(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), 0);\n", 
 				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 		}	
 		if (x.second->type == wxTypes::SpinCtrlDouble)
@@ -621,7 +651,7 @@ public:
 	//PropertyGrid() { }
 	PropertyGrid(MyPanel* parent, int id, wxString pos, wxString size, wxColour color)
 	{
-		m_propertyGrid = new wxPropertyGrid(parent, PGID, wxPoint(850, 0), wxSize(300, 1000), wxPG_DEFAULT_STYLE);
+		m_propertyGrid = new wxPropertyGrid(parent, PGID, wxPoint(850, 300), wxSize(300, 1000), wxPG_DEFAULT_STYLE);
 		wxPGProperty* pid = m_propertyGrid->Append(new wxPropertyCategory("wxCreator Item"));
 		pid->SetValue("Value");
 
@@ -691,6 +721,14 @@ public:
 		m_pgTooltip->SetValue(t->GetToolTipText());
 		m_pgEnabled->SetValue(t->IsEnabled());
 		m_pgHidden->SetValue(!t->IsShown());
+		switch (pair.second->type)
+		{
+		case wxTypes::Slider:
+		{
+			m_pgSliderStyle->SetValue(reinterpret_cast<wxSlider*>(t)->GetWindowStyleFlag());
+			break;
+		}
+		}
 	}
 public:
 	
@@ -759,18 +797,16 @@ PropertyGrid* m_propgrid = nullptr;
 MyPanel::MyPanel(wxFrame* parent)
     : wxPanel(parent, wxID_ANY)
 {	
+	m_TreeCtrl = new wxTreeCtrl(this, TreeTest_Ctrl, wxPoint(850, 0), wxSize(300, 300), wxTR_DEFAULT_STYLE);
+	m_RootItem = m_TreeCtrl->AddRoot("Items");
 	m_propgrid = new PropertyGrid(this, 100, wxT("0,0"), wxT("0,0"), wxColor(*wxRED));
 	m_wxButton = new wxButton(this, wxID_ANY, wxT("btn"), wxPoint(0, 815), wxSize(25, 25), 0);
 	m_wxButton->SetToolTip("wxButton");
 	m_wxButton->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& event)
 		{
 			m_Log->Append(wxString::Format("Clicked on wxButton - pos: %d,%d", m_wxButton->GetPosition().x, m_wxButton->GetPosition().y));
-
 			void* tmp = new wxButton(this, wxID_ANY, wxT("wxButton"), wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = new ObjectStructure(wxTypes::Button);
-			m_SelectedWidget = tmp;
-
-			((wxButton*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+			objects[tmp] = new ObjectStructure(this, tmp, wxTypes::Button);
 		});
 
 	m_wxComboBox = new wxComboBox(this, wxID_ANY, wxT("combo"), wxPoint(30, 815), wxSize(25, 25), 0);
@@ -780,10 +816,7 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxComboBox - pos: %d,%d", m_wxComboBox->GetPosition().x, m_wxComboBox->GetPosition().y));
 
 			void* tmp = new wxComboBox(this, wxID_ANY, wxT("wxComboBox"), wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = new ObjectStructure(wxTypes::ComboBox);
-			m_SelectedWidget = tmp;
-
-			((wxButton*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+			objects[tmp] = new ObjectStructure(this, tmp, wxTypes::ComboBox);
 		});
 
 	wxArrayString m_choiceChoices;
@@ -799,10 +832,7 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_choiceChoices2.Add("Second");
 			void* tmp = new wxChoice(this, wxID_ANY, wxPoint(80, 815), wxSize(40, 25), m_choiceChoices2, 0);
 			((wxChoice*)(tmp))->SetSelection(0);
-			objects[tmp] = new ObjectStructure(wxTypes::Choise);
-			m_SelectedWidget = tmp;
-
-			((wxChoice*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+			objects[tmp] = new ObjectStructure(this, tmp, wxTypes::Choise);
 		});
 
 	m_wxListBox = new wxListBox(this, wxID_ANY, wxPoint(90, 815), wxSize(25, 25), 0);
@@ -812,10 +842,7 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxComboBox - pos: %d,%d", m_wxListBox->GetPosition().x, m_wxListBox->GetPosition().y));
 
 			void* tmp = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = new ObjectStructure(wxTypes::ListBox);
-			m_SelectedWidget = tmp;
-
-			((wxListBox*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+			objects[tmp] = new ObjectStructure(this, tmp, wxTypes::ListBox);
 		});
 
 	m_wxCheckBox = new wxCheckBox(this, wxID_ANY, wxT("Check Me!"), wxPoint(120, 815), wxSize(25, 25), 0);
@@ -825,10 +852,7 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxCheckBox - pos: %d,%d", m_wxCheckBox->GetPosition().x, m_wxCheckBox->GetPosition().y));
 
 			void* tmp = new wxCheckBox(this, wxID_ANY, wxT("Check Me!"), wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = new ObjectStructure(wxTypes::CheckBox);
-			m_SelectedWidget = tmp;
-
-			((wxCheckBox*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+			objects[tmp] = new ObjectStructure(this, tmp, wxTypes::CheckBox);
 		});
 
 	m_wxRadioButton = new wxRadioButton(this, wxID_ANY, wxT("RadioBtn"), wxPoint(150, 815), wxSize(25, 25), 0);
@@ -838,10 +862,7 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxRadioButton - pos: %d,%d", m_wxRadioButton->GetPosition().x, m_wxRadioButton->GetPosition().y));
 
 			void* tmp = new wxRadioButton(this, wxID_ANY, wxT("RadioBtn"), wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = new ObjectStructure(wxTypes::RadioButton);
-			m_SelectedWidget = tmp;
-
-			((wxRadioButton*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+			objects[tmp] = new ObjectStructure(this, tmp, wxTypes::RadioButton);
 		});
 
 	m_wxStaticLine = new wxStaticLine(this, wxID_ANY, wxPoint(180, 815), wxSize(25, 25), 0);
@@ -851,10 +872,7 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxStaticLine - pos: %d,%d", m_wxStaticLine->GetPosition().x, m_wxStaticLine->GetPosition().y));
 
 			void* tmp = new wxStaticLine(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = new ObjectStructure(wxTypes::StaticLine);
-			m_SelectedWidget = tmp;
-
-			((wxStaticLine*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+			objects[tmp] = new ObjectStructure(this, tmp, wxTypes::StaticLine);
 		});
 
 	m_wxSlider = new wxSlider(this, wxID_ANY, 50, 0, 100, wxPoint(210, 815), wxSize(25, 25), 0);
@@ -864,10 +882,7 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxSlider - pos: %d,%d", m_wxSlider->GetPosition().x, m_wxSlider->GetPosition().y));
 
 			void* tmp = new wxSlider(this, wxID_ANY, 80, 0, 100, wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = new ObjectStructure(wxTypes::Slider);
-			m_SelectedWidget = tmp;
-
-			((wxSlider*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+			objects[tmp] = new ObjectStructure(this, tmp, wxTypes::Slider);
 		});
 
 	m_wxGauge = new wxGauge(this, wxID_ANY, 100, wxPoint(240, 815), wxSize(25, 25), 0);
@@ -879,10 +894,7 @@ MyPanel::MyPanel(wxFrame* parent)
 
 			void* tmp = new wxGauge(this, wxID_ANY, 100, wxDefaultPosition, wxDefaultSize, 0);
 			((wxGauge*)(tmp))->SetValue(20);
-			objects[tmp] = new ObjectStructure(wxTypes::Gauge);
-			m_SelectedWidget = tmp;
-
-			((wxGauge*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+			objects[tmp] = new ObjectStructure(this, tmp, wxTypes::Gauge);
 		});
 
 
@@ -893,10 +905,7 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxStaticText - pos: %d,%d", m_wxStaticText->GetPosition().x, m_wxStaticText->GetPosition().y));
 
 			void* tmp = new wxStaticText(this, wxID_ANY, wxT("wxStaticText"), wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = new ObjectStructure(wxTypes::Text);
-			m_SelectedWidget = tmp;
-			
-			((wxStaticText*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+			objects[tmp] = new ObjectStructure(this, tmp, wxTypes::Text);
 		});
 
 	m_wxSpinCtrl = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxPoint(76, 785), wxSize(25, 25), wxSP_ARROW_KEYS, 1, 255, 1);
@@ -906,10 +915,7 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxSpinCtrl - pos: %d,%d", m_wxSpinCtrl->GetPosition().x, m_wxSpinCtrl->GetPosition().y));
 
 			void* tmp = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 255, 1);
-			objects[tmp] = new ObjectStructure(wxTypes::SpinControl);
-			m_SelectedWidget = tmp;
-
-			((wxSpinCtrl*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+			objects[tmp] = new ObjectStructure(this, tmp, wxTypes::SpinControl);
 		});
 
 	m_wxTextCtrl = new wxTextCtrl(this, wxID_ANY, wxT("wxTextCtrl"), wxPoint(140, 785), wxSize(25, 25), 0);
@@ -919,10 +925,7 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxTextCtrl - pos: %d,%d", m_wxStaticText->GetPosition().x, m_wxStaticText->GetPosition().y));
 
 			void* tmp = new wxTextCtrl(this, wxID_ANY, wxT("wxTextCtrl"), wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = new ObjectStructure(wxTypes::TextControl);
-			m_SelectedWidget = tmp;
-			
-			((wxStaticText*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+			objects[tmp] = new ObjectStructure(this, tmp, wxTypes::TextControl);
 		});
 
 	m_wxToggleButton = new wxToggleButton(this, wxID_ANY, wxT("Toggle me!"), wxPoint(170, 785), wxSize(25, 25), 0);
@@ -932,10 +935,7 @@ MyPanel::MyPanel(wxFrame* parent)
 			m_Log->Append(wxString::Format("Clicked on wxToggleButton - pos: %d,%d", m_wxStaticText->GetPosition().x, m_wxStaticText->GetPosition().y));
 
 			void* tmp = new wxToggleButton(this, wxID_ANY, wxT("Toggle me!"), wxDefaultPosition, wxDefaultSize, 0);
-			objects[tmp] = new ObjectStructure(wxTypes::ToggleButton);
-			m_SelectedWidget = tmp;
-			
-			((wxToggleButton*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+			objects[tmp] = new ObjectStructure(this, tmp, wxTypes::ToggleButton);
 		});
 
 	m_Log = new wxListBox(this, wxID_ANY, wxPoint(0, 700), wxSize(300, 80), 0, 0, wxLB_EXTENDED | wxLB_HSCROLL | wxLB_NEEDED_SB);
@@ -998,9 +998,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 				new_btn->SetForegroundColour(text->GetForegroundColour());
 				new_btn->SetBackgroundColour(text->GetBackgroundColour());
 				new_btn->SetFont(text->GetFont());
-				objects[new_btn] = new ObjectStructure(wxTypes::Button);
-				m_SelectedWidget = new_btn;
-				new_btn->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_btn] = new ObjectStructure(this, new_btn, wxTypes::Button);
 				break;			
 			}
 			case wxTypes::ComboBox:
@@ -1010,24 +1008,17 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 				new_btn->SetForegroundColour(text->GetForegroundColour());
 				new_btn->SetBackgroundColour(text->GetBackgroundColour());
 				new_btn->SetFont(text->GetFont());
-				objects[new_btn] = new ObjectStructure(wxTypes::ComboBox);
-				m_SelectedWidget = new_btn;
-				new_btn->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_btn] = new ObjectStructure(this, new_btn, wxTypes::ComboBox);
 				break;			
 			}		
 			case wxTypes::Choise:
 			{
 				wxChoice* text = reinterpret_cast<wxChoice*>(m_SelectedWidget);
-				wxArrayString m_choiceChoices2;
-				m_choiceChoices2.Add("First");
-				m_choiceChoices2.Add("Second");
-				wxChoice* new_btn = new wxChoice(this, wxID_ANY, text->GetPosition(), text->GetSize(), m_choiceChoices2, text->GetWindowStyleFlag());
+				wxChoice* new_btn = new wxChoice(this, wxID_ANY, text->GetPosition(), text->GetSize(), text->GetStrings(), text->GetWindowStyleFlag());
 				new_btn->SetForegroundColour(text->GetForegroundColour());
 				new_btn->SetBackgroundColour(text->GetBackgroundColour());
 				new_btn->SetFont(text->GetFont());
-				objects[new_btn] = new ObjectStructure(wxTypes::Choise);
-				m_SelectedWidget = new_btn;
-				new_btn->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_btn] = new ObjectStructure(this, new_btn, wxTypes::Choise);
 				break;			
 			}
 			case wxTypes::ListBox:
@@ -1040,9 +1031,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 				new_text->SetForegroundColour(text->GetForegroundColour());
 				new_text->SetBackgroundColour(text->GetBackgroundColour());
 				new_text->SetFont(text->GetFont());
-				objects[new_text] = new ObjectStructure(wxTypes::ListBox);
-				m_SelectedWidget = new_text;
-				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_text] = new ObjectStructure(this, new_text, wxTypes::ListBox);
 				break;
 			}
 			case wxTypes::CheckBox:
@@ -1052,9 +1041,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 				new_text->SetForegroundColour(text->GetForegroundColour());
 				new_text->SetBackgroundColour(text->GetBackgroundColour());
 				new_text->SetFont(text->GetFont());
-				objects[new_text] = new ObjectStructure(wxTypes::CheckBox);
-				m_SelectedWidget = new_text;
-				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_text] = new ObjectStructure(this, new_text, wxTypes::CheckBox);
 				break;
 			}
 			case wxTypes::RadioButton:
@@ -1064,9 +1051,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 				new_text->SetForegroundColour(text->GetForegroundColour());
 				new_text->SetBackgroundColour(text->GetBackgroundColour());
 				new_text->SetFont(text->GetFont());
-				objects[new_text] = new ObjectStructure(wxTypes::RadioButton);
-				m_SelectedWidget = new_text;
-				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_text] = new ObjectStructure(this, new_text, wxTypes::RadioButton);
 				break;
 			}
 			case wxTypes::StaticLine:
@@ -1076,9 +1061,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 				new_text->SetForegroundColour(text->GetForegroundColour());
 				new_text->SetBackgroundColour(text->GetBackgroundColour());
 				new_text->SetFont(text->GetFont());
-				objects[new_text] = new ObjectStructure(wxTypes::StaticLine);
-				m_SelectedWidget = new_text;
-				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_text] = new ObjectStructure(this, new_text, wxTypes::StaticLine);
 				break;
 			}	
 			case wxTypes::Slider:
@@ -1088,9 +1071,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 				new_text->SetForegroundColour(text->GetForegroundColour());
 				new_text->SetBackgroundColour(text->GetBackgroundColour());
 				new_text->SetFont(text->GetFont());
-				objects[new_text] = new ObjectStructure(wxTypes::Slider);
-				m_SelectedWidget = new_text;
-				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_text] = new ObjectStructure(this, new_text, wxTypes::Slider);
 				break;
 			}			
 			case wxTypes::Gauge:
@@ -1100,9 +1081,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 				new_text->SetForegroundColour(text->GetForegroundColour());
 				new_text->SetBackgroundColour(text->GetBackgroundColour());
 				new_text->SetFont(text->GetFont());
-				objects[new_text] = new ObjectStructure(wxTypes::Gauge);
-				m_SelectedWidget = new_text;
-				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_text] = new ObjectStructure(this, new_text, wxTypes::Gauge);
 				break;
 			}	
 			case wxTypes::Text:
@@ -1112,9 +1091,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 				new_text->SetForegroundColour(text->GetForegroundColour());
 				new_text->SetBackgroundColour(text->GetBackgroundColour());
 				new_text->SetFont(text->GetFont());
-				objects[new_text] = new ObjectStructure(wxTypes::Text);
-				m_SelectedWidget = new_text;
-				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_text] = new ObjectStructure(this, new_text, wxTypes::Text);
 				break;
 			}
 			case wxTypes::SpinControl:
@@ -1124,9 +1101,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 				new_text->SetForegroundColour(text->GetForegroundColour());
 				new_text->SetBackgroundColour(text->GetBackgroundColour());
 				new_text->SetFont(text->GetFont());
-				objects[new_text] = new ObjectStructure(wxTypes::SpinControl);
-				m_SelectedWidget = new_text;
-				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_text] = new ObjectStructure(this, new_text, wxTypes::SpinControl);
 				break;
 			}			
 			case wxTypes::SpinCtrlDouble:
@@ -1136,9 +1111,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 				new_text->SetForegroundColour(text->GetForegroundColour());
 				new_text->SetBackgroundColour(text->GetBackgroundColour());
 				new_text->SetFont(text->GetFont());
-				objects[new_text] = new ObjectStructure(wxTypes::SpinCtrlDouble);
-				m_SelectedWidget = new_text;
-				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_text] = new ObjectStructure(this, new_text, wxTypes::SpinCtrlDouble);
 				break;
 			}
 			case wxTypes::TextControl:
@@ -1148,9 +1121,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 				new_text->SetForegroundColour(text->GetForegroundColour());
 				new_text->SetBackgroundColour(text->GetBackgroundColour());
 				new_text->SetFont(text->GetFont());
-				objects[new_text] = new ObjectStructure(wxTypes::TextControl);
-				m_SelectedWidget = new_text;
-				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_text] = new ObjectStructure(this, new_text, wxTypes::TextControl);
 				break;
 			}			
 			case wxTypes::ToggleButton:
@@ -1160,9 +1131,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 				new_text->SetForegroundColour(text->GetForegroundColour());
 				new_text->SetBackgroundColour(text->GetBackgroundColour());
 				new_text->SetFont(text->GetFont());
-				objects[new_text] = new ObjectStructure(wxTypes::ToggleButton);
-				m_SelectedWidget = new_text;
-				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_text] = new ObjectStructure(this, new_text, wxTypes::ToggleButton);
 				break;
 			}			
 			case wxTypes::SearchCtrl:
@@ -1172,9 +1141,7 @@ void MyPanel::OnKeyDown(wxKeyEvent& event)
 				new_text->SetForegroundColour(text->GetForegroundColour());
 				new_text->SetBackgroundColour(text->GetBackgroundColour());
 				new_text->SetFont(text->GetFont());
-				objects[new_text] = new ObjectStructure(wxTypes::SearchCtrl);
-				m_SelectedWidget = new_text;
-				new_text->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+				objects[new_text] = new ObjectStructure(this, new_text, wxTypes::SearchCtrl);
 				break;
 			}
 		}
@@ -1545,7 +1512,20 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 		{
 			long flags;
 			property->GetValue().Convert(&flags);
-			((wxButton*)m_SelectedWidget)->SetWindowStyleFlag(flags);
+
+			wxButton* old = ((wxButton*)(m_SelectedWidget));
+			void* tmp = new wxButton(this, wxID_ANY, old->GetLabelText(), old->GetPosition(), old->GetSize(), flags);
+			old->Destroy();
+
+			auto nodeHandler = objects.extract(old);
+			nodeHandler.key() = tmp;
+			objects.insert(std::move(nodeHandler));
+
+			old = nullptr;
+			m_SelectedWidget = tmp;
+
+			((wxButton*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+
 		}
 	}	
 	else if (property == m_pgSliderStyle)
@@ -1554,7 +1534,19 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 		{
 			long flags;
 			property->GetValue().Convert(&flags);
-			((wxSlider*)m_SelectedWidget)->SetWindowStyleFlag(flags);
+
+			wxSlider* old = ((wxSlider*)(m_SelectedWidget));
+			void* tmp = new wxSlider(this, wxID_ANY, 80, 0, 100, old->GetPosition(), old->GetSize(), flags);
+			old->Destroy();
+			
+			auto nodeHandler = objects.extract(old);
+			nodeHandler.key() = tmp;
+			objects.insert(std::move(nodeHandler));
+
+			old = nullptr;
+			m_SelectedWidget = tmp;
+			
+			((wxSlider*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
 		}
 	}	
 	else if (property == m_pgStaticTextStyle)
@@ -1564,6 +1556,24 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 			long flags;
 			property->GetValue().Convert(&flags);
 			((wxStaticText*)m_SelectedWidget)->SetWindowStyleFlag(flags);
+		}
+	}
+	else if (property == m_pgTextCtrlStyle)
+	{
+		if (t != nullptr && t->type == wxTypes::TextControl)
+		{
+			long flags;
+			property->GetValue().Convert(&flags);
+			((wxTextCtrl*)m_SelectedWidget)->SetWindowStyleFlag(flags);
+		}
+	}
+	else if (property == m_pgComboBoxStyle)
+	{
+		if (t != nullptr && t->type == wxTypes::ComboBox)
+		{
+			long flags;
+			property->GetValue().Convert(&flags);
+			((wxComboBox*)m_SelectedWidget)->SetWindowStyleFlag(flags);
 		}
 	}
 }
@@ -1614,4 +1624,19 @@ void MyPanel::MarkSelectedItem(void)
 void MyPanel::OnPaint(wxPaintEvent& event)
 {
 	MarkSelectedItem();
+}
+
+void MyPanel::OnListCtrlSelChanged(wxTreeEvent& event)
+{
+	wxTreeItemId label = event.GetItem();
+	void* obj = GetWidgetByItemID(label);
+	ObjectStructure* t = FindwxText(obj);
+	if (t != nullptr && obj != nullptr)
+	{
+		m_SelectedWidget = obj;
+		m_Log->Append(wxString::Format("Clicked on %s", GetNameFromEnum<wxTypes>(t->type)));
+		MarkSelectedItem();
+		wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
+		m_propgrid->Update(std::make_pair((void*)text, t));
+	}
 }

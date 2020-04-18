@@ -21,6 +21,7 @@
 #include <wx/dateevt.h>
 #include <wx/timectrl.h>
 #include <wx/calctrl.h>
+#include <wx/treectrl.h>
 
 enum class wxTypes : int
 {
@@ -53,27 +54,7 @@ enum class wxTypes : int
 };
 template <class T> wxString GetNameFromEnum(T to_get);
 
-class ObjectStructure
-{
-public:
-	wxTypes type;
-	int id; /**Item ID */
-	wxString name; /**< Item name */
-	uint8_t fg_color_changed;
-	uint8_t bg_color_changed;
-	ObjectStructure(wxTypes _type, wxString _name = wxT(" ")) :
-		type(_type), name(std::move(name))
-	{
-		extern uint16_t wx_list[];
-		extern const char* type_names[12];
-		id = wx_list[static_cast<int>(_type)]++;
-		name = wxString::Format("%s_%d", GetNameFromEnum<wxTypes>(type), id);
-		fg_color_changed = bg_color_changed = 0;
-	}
-};
-
-
-
+class ObjectStructure;
 class MyPanel : public wxPanel
 {
 public:
@@ -92,6 +73,8 @@ public:
 	void* m_SelectedWidget = nullptr;
 	wxSpinCtrl* m_wxSpinCtrl = nullptr;
 	int m_speed = 1;
+	wxTreeCtrl* m_TreeCtrl;
+	wxTreeItemId m_RootItem;
 
 private:
 	wxButton* m_wxButton = nullptr;
@@ -116,11 +99,47 @@ private:
 	void OnPropertyGridChange(wxPropertyGridEvent& event);
 	void MarkSelectedItem(void);
 	void OnPaint(wxPaintEvent& event);
+	void OnListCtrlSelChanged(wxTreeEvent& event);
 	template <class T> void SetPos(void* ptr, wxPoint& pos);
 	ObjectStructure* FindwxText(void* object_to_find = nullptr);
-	
+
 	wxDECLARE_EVENT_TABLE();
 };
+
+
+class ObjectStructure
+{
+public:
+	wxTypes type;
+	int id; /**Item ID */
+	wxString name; /**< Item name */
+	uint8_t fg_color_changed;
+	uint8_t bg_color_changed;
+	wxTreeItemId item_id;
+	ObjectStructure(MyPanel* p, void* widget, wxTypes _type, wxString _name = wxT(" ")) :
+		type(_type), name(std::move(name))
+	{
+		extern uint16_t wx_list[];
+		extern const char* type_names[12];
+		id = wx_list[static_cast<int>(_type)]++;
+		name = wxString::Format("%s_%d", GetNameFromEnum<wxTypes>(type), id);
+		fg_color_changed = bg_color_changed = 0;
+		p->m_SelectedWidget = widget;
+		item_id = p->m_TreeCtrl->AppendItem(p->m_RootItem, name);
+		p->m_TreeCtrl->ExpandAll();
+		((wxButton*)(widget))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, p);
+	}
+	ObjectStructure(wxTypes _type, wxString _name = wxT(" ")) :
+		type(_type), name(std::move(name))
+	{
+		extern uint16_t wx_list[];
+		extern const char* type_names[12];
+		id = wx_list[static_cast<int>(_type)]++;
+		name = wxString::Format("%s_%d", GetNameFromEnum<wxTypes>(type), id);
+		fg_color_changed = bg_color_changed = 0;
+	}
+};
+
 
 class CppPanel : public wxPanel
 {
