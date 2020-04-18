@@ -19,6 +19,7 @@
 #include "wx/treectrl.h"
 #include <wx/dirctrl.h>
 #include "magic_enum.hpp"
+#include <wx/xml/xml.h>
 
 enum
 {
@@ -772,6 +773,9 @@ MyPanel::MyPanel(wxFrame* parent)
 	m_TreeCtrl = new wxTreeCtrl(this, TreeTest_Ctrl, wxPoint(850, 0), wxSize(300, 300), wxTR_DEFAULT_STYLE);
 	m_RootItem = m_TreeCtrl->AddRoot("Items");
 	m_propgrid = new PropertyGrid(this, 100, wxT("0,0"), wxT("0,0"), wxColor(*wxRED));
+
+
+
 	m_wxButton = new wxButton(this, wxID_ANY, wxT("btn"), wxPoint(0, 815), wxSize(25, 25), 0);
 	m_wxButton->SetToolTip("wxButton");
 	m_wxButton->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& event)
@@ -1611,4 +1615,304 @@ void MyPanel::OnListCtrlSelChanged(wxTreeEvent& event)
 		wxStaticText* text = reinterpret_cast<wxStaticText*>(m_SelectedWidget);
 		m_propgrid->Update(std::make_pair((void*)text, t));
 	}
+}
+
+void MyPanel::LoadFromXml(wxString xml_path)
+{
+	wxXmlDocument doc;
+	if (!doc.Load(wxT("meta.xml")))
+		return;
+
+	wxString a = doc.GetRoot()->GetName();
+	if (a != "wxCreatorXmlFile")
+		return;
+	wxXmlNode* child = doc.GetRoot()->GetChildren();
+	while (child)
+	{
+		wxPoint pos;
+		wxSize size, min_size, max_size;
+		int fontsize, fontfamily, fontstyle, fontweight, is_underlined;
+		char fontname[128];
+
+		wxString str = child->GetName();
+		if (str == "widget")
+		{
+			wxString str_type = child->GetAttribute("type");
+			if (str_type == "button")
+			{
+				uint8_t fg_colors[3], bg_colors[3];
+				sscanf(child->GetAttribute("pos").c_str(), "%d,%d", &pos.x, &pos.y);
+				sscanf(child->GetAttribute("size").c_str(), "%d,%d", &size.x, &size.y);
+				sscanf(child->GetAttribute("min_size").c_str(), "%d,%d", &min_size.x, &min_size.y);
+				sscanf(child->GetAttribute("max_size").c_str(), "%d,%d", &max_size.x, &max_size.y);
+				sscanf(child->GetAttribute("fg_color").c_str(), "%hhd,%hhd,%hhd", &fg_colors[0], &fg_colors[1], &fg_colors[2]);
+				sscanf(child->GetAttribute("bg_color").c_str(), "%hhd,%hhd,%hhd", &bg_colors[0], &bg_colors[1], &bg_colors[2]);
+				sscanf(child->GetAttribute("font").c_str(), "%d,%d,%d,%d,%d,%[^\n]s", &fontsize, &fontfamily, &fontstyle, &fontweight, &is_underlined, fontname);
+				wxButton* tmp = new wxButton(this, wxID_ANY, child->GetAttribute("label"), pos, size, wxAtoi(child->GetAttribute("flags")));
+				tmp->SetToolTip(child->GetAttribute("tooltip"));
+				tmp->SetMinSize(min_size);
+				tmp->SetMaxSize(max_size);
+				tmp->SetForegroundColour(wxColour(fg_colors[0], fg_colors[1], fg_colors[2]));
+				tmp->SetBackgroundColour(wxColour(bg_colors[0], bg_colors[1], bg_colors[2]));
+				tmp->SetFont(wxFont(fontsize, static_cast<wxFontFamily>(fontfamily), static_cast<wxFontStyle>(fontstyle), static_cast<wxFontWeight>(fontweight), is_underlined != 0, wxString(fontname)));
+				objects[tmp] = new ObjectStructure(this, tmp, wxTypes::Button);
+			}
+			if (str_type == "combobox")
+			{
+				uint8_t fg_colors[3], bg_colors[3];
+				sscanf(child->GetAttribute("pos").c_str(), "%d,%d", &pos.x, &pos.y);
+				sscanf(child->GetAttribute("size").c_str(), "%d,%d", &size.x, &size.y);
+				sscanf(child->GetAttribute("min_size").c_str(), "%d,%d", &min_size.x, &min_size.y);
+				sscanf(child->GetAttribute("max_size").c_str(), "%d,%d", &max_size.x, &max_size.y);
+				sscanf(child->GetAttribute("fg_color").c_str(), "%hhd,%hhd,%hhd", &fg_colors[0], &fg_colors[1], &fg_colors[2]);
+				sscanf(child->GetAttribute("bg_color").c_str(), "%hhd,%hhd,%hhd", &bg_colors[0], &bg_colors[1], &bg_colors[2]);
+				sscanf(child->GetAttribute("font").c_str(), "%d,%d,%d,%d,%d,%[^\n]s", &fontsize, &fontfamily, &fontstyle, &fontweight, &is_underlined, fontname);
+				wxArrayString a;
+				wxComboBox* tmp = new wxComboBox(this, wxID_ANY, child->GetAttribute("label"), pos, size, a, wxAtoi(child->GetAttribute("flags")));
+				tmp->SetToolTip(child->GetAttribute("tooltip"));
+				tmp->SetMinSize(min_size);
+				tmp->SetMaxSize(max_size);
+				tmp->SetForegroundColour(wxColour(fg_colors[0], fg_colors[1], fg_colors[2]));
+				tmp->SetBackgroundColour(wxColour(bg_colors[0], bg_colors[1], bg_colors[2]));
+				tmp->SetFont(wxFont(fontsize, static_cast<wxFontFamily>(fontfamily), static_cast<wxFontStyle>(fontstyle), static_cast<wxFontWeight>(fontweight), is_underlined != 0, wxString(fontname)));
+				objects[tmp] = new ObjectStructure(this, tmp, wxTypes::ComboBox);
+			}
+			if (str_type == "choise")
+			{
+				uint8_t fg_colors[3], bg_colors[3];
+				sscanf(child->GetAttribute("pos").c_str(), "%d,%d", &pos.x, &pos.y);
+				sscanf(child->GetAttribute("size").c_str(), "%d,%d", &size.x, &size.y);
+				sscanf(child->GetAttribute("min_size").c_str(), "%d,%d", &min_size.x, &min_size.y);
+				sscanf(child->GetAttribute("max_size").c_str(), "%d,%d", &max_size.x, &max_size.y);
+				sscanf(child->GetAttribute("fg_color").c_str(), "%hhd,%hhd,%hhd", &fg_colors[0], &fg_colors[1], &fg_colors[2]);
+				sscanf(child->GetAttribute("bg_color").c_str(), "%hhd,%hhd,%hhd", &bg_colors[0], &bg_colors[1], &bg_colors[2]);
+				sscanf(child->GetAttribute("font").c_str(), "%d,%d,%d,%d,%d,%[^\n]s", &fontsize, &fontfamily, &fontstyle, &fontweight, &is_underlined, fontname);
+				wxArrayString a;
+				wxChoice* tmp = new wxChoice(this, wxID_ANY, pos, size, a, wxAtoi(child->GetAttribute("flags")));
+				tmp->SetToolTip(child->GetAttribute("tooltip"));
+				tmp->SetMinSize(min_size);
+				tmp->SetMaxSize(max_size);
+				tmp->SetForegroundColour(wxColour(fg_colors[0], fg_colors[1], fg_colors[2]));
+				tmp->SetBackgroundColour(wxColour(bg_colors[0], bg_colors[1], bg_colors[2]));
+				tmp->SetFont(wxFont(fontsize, static_cast<wxFontFamily>(fontfamily), static_cast<wxFontStyle>(fontstyle), static_cast<wxFontWeight>(fontweight), is_underlined != 0, wxString(fontname)));
+				objects[tmp] = new ObjectStructure(this, tmp, wxTypes::Choise);
+			}
+			if (str_type == "listbox")
+			{
+				uint8_t fg_colors[3], bg_colors[3];
+				sscanf(child->GetAttribute("pos").c_str(), "%d,%d", &pos.x, &pos.y);
+				sscanf(child->GetAttribute("size").c_str(), "%d,%d", &size.x, &size.y);
+				sscanf(child->GetAttribute("min_size").c_str(), "%d,%d", &min_size.x, &min_size.y);
+				sscanf(child->GetAttribute("max_size").c_str(), "%d,%d", &max_size.x, &max_size.y);
+				sscanf(child->GetAttribute("fg_color").c_str(), "%hhd,%hhd,%hhd", &fg_colors[0], &fg_colors[1], &fg_colors[2]);
+				sscanf(child->GetAttribute("bg_color").c_str(), "%hhd,%hhd,%hhd", &bg_colors[0], &bg_colors[1], &bg_colors[2]);
+				sscanf(child->GetAttribute("font").c_str(), "%d,%d,%d,%d,%d,%[^\n]s", &fontsize, &fontfamily, &fontstyle, &fontweight, &is_underlined, fontname);
+				wxArrayString a;
+				wxListBox* tmp = new wxListBox(this, wxID_ANY, pos, size, a, wxAtoi(child->GetAttribute("flags")));
+				tmp->SetToolTip(child->GetAttribute("tooltip"));
+				tmp->SetMinSize(min_size);
+				tmp->SetMaxSize(max_size);
+				tmp->SetForegroundColour(wxColour(fg_colors[0], fg_colors[1], fg_colors[2]));
+				tmp->SetBackgroundColour(wxColour(bg_colors[0], bg_colors[1], bg_colors[2]));
+				tmp->SetFont(wxFont(fontsize, static_cast<wxFontFamily>(fontfamily), static_cast<wxFontStyle>(fontstyle), static_cast<wxFontWeight>(fontweight), is_underlined != 0, wxString(fontname)));
+				objects[tmp] = new ObjectStructure(this, tmp, wxTypes::Choise);
+			}
+			if (str_type == "checkbox")
+			{
+				uint8_t fg_colors[3], bg_colors[3];
+				sscanf(child->GetAttribute("pos").c_str(), "%d,%d", &pos.x, &pos.y);
+				sscanf(child->GetAttribute("size").c_str(), "%d,%d", &size.x, &size.y);
+				sscanf(child->GetAttribute("min_size").c_str(), "%d,%d", &min_size.x, &min_size.y);
+				sscanf(child->GetAttribute("max_size").c_str(), "%d,%d", &max_size.x, &max_size.y);
+				sscanf(child->GetAttribute("fg_color").c_str(), "%hhd,%hhd,%hhd", &fg_colors[0], &fg_colors[1], &fg_colors[2]);
+				sscanf(child->GetAttribute("bg_color").c_str(), "%hhd,%hhd,%hhd", &bg_colors[0], &bg_colors[1], &bg_colors[2]);
+				sscanf(child->GetAttribute("font").c_str(), "%d,%d,%d,%d,%d,%[^\n]s", &fontsize, &fontfamily, &fontstyle, &fontweight, &is_underlined, fontname);
+				wxCheckBox* tmp = new wxCheckBox(this, wxID_ANY, child->GetAttribute("label"), pos, size, wxAtoi(child->GetAttribute("flags")));
+				tmp->SetToolTip(child->GetAttribute("tooltip"));
+				tmp->SetMinSize(min_size);
+				tmp->SetMaxSize(max_size);
+				tmp->SetForegroundColour(wxColour(fg_colors[0], fg_colors[1], fg_colors[2]));
+				tmp->SetBackgroundColour(wxColour(bg_colors[0], bg_colors[1], bg_colors[2]));
+				tmp->SetFont(wxFont(fontsize, static_cast<wxFontFamily>(fontfamily), static_cast<wxFontStyle>(fontstyle), static_cast<wxFontWeight>(fontweight), is_underlined != 0, wxString(fontname)));
+				objects[tmp] = new ObjectStructure(this, tmp, wxTypes::CheckBox);
+			}
+			if (str_type == "radiobutton")
+			{
+				uint8_t fg_colors[3], bg_colors[3];
+				sscanf(child->GetAttribute("pos").c_str(), "%d,%d", &pos.x, &pos.y);
+				sscanf(child->GetAttribute("size").c_str(), "%d,%d", &size.x, &size.y);
+				sscanf(child->GetAttribute("min_size").c_str(), "%d,%d", &min_size.x, &min_size.y);
+				sscanf(child->GetAttribute("max_size").c_str(), "%d,%d", &max_size.x, &max_size.y);
+				sscanf(child->GetAttribute("fg_color").c_str(), "%hhd,%hhd,%hhd", &fg_colors[0], &fg_colors[1], &fg_colors[2]);
+				sscanf(child->GetAttribute("bg_color").c_str(), "%hhd,%hhd,%hhd", &bg_colors[0], &bg_colors[1], &bg_colors[2]);
+				sscanf(child->GetAttribute("font").c_str(), "%d,%d,%d,%d,%d,%[^\n]s", &fontsize, &fontfamily, &fontstyle, &fontweight, &is_underlined, fontname);
+				wxRadioButton* tmp = new wxRadioButton(this, wxID_ANY, child->GetAttribute("label"), pos, size, wxAtoi(child->GetAttribute("flags")));
+				tmp->SetToolTip(child->GetAttribute("tooltip"));
+				tmp->SetMinSize(min_size);
+				tmp->SetMaxSize(max_size);
+				tmp->SetForegroundColour(wxColour(fg_colors[0], fg_colors[1], fg_colors[2]));
+				tmp->SetBackgroundColour(wxColour(bg_colors[0], bg_colors[1], bg_colors[2]));
+				tmp->SetFont(wxFont(fontsize, static_cast<wxFontFamily>(fontfamily), static_cast<wxFontStyle>(fontstyle), static_cast<wxFontWeight>(fontweight), is_underlined != 0, wxString(fontname)));
+				objects[tmp] = new ObjectStructure(this, tmp, wxTypes::RadioButton);
+			}
+			if (str_type == "staticline")
+			{
+				uint8_t fg_colors[3], bg_colors[3];
+				sscanf(child->GetAttribute("pos").c_str(), "%d,%d", &pos.x, &pos.y);
+				sscanf(child->GetAttribute("size").c_str(), "%d,%d", &size.x, &size.y);
+				sscanf(child->GetAttribute("min_size").c_str(), "%d,%d", &min_size.x, &min_size.y);
+				sscanf(child->GetAttribute("max_size").c_str(), "%d,%d", &max_size.x, &max_size.y);
+				sscanf(child->GetAttribute("fg_color").c_str(), "%hhd,%hhd,%hhd", &fg_colors[0], &fg_colors[1], &fg_colors[2]);
+				sscanf(child->GetAttribute("bg_color").c_str(), "%hhd,%hhd,%hhd", &bg_colors[0], &bg_colors[1], &bg_colors[2]);
+				sscanf(child->GetAttribute("font").c_str(), "%d,%d,%d,%d,%d,%[^\n]s", &fontsize, &fontfamily, &fontstyle, &fontweight, &is_underlined, fontname);
+				wxStaticLine* tmp = new wxStaticLine(this, wxID_ANY, pos, size, wxAtoi(child->GetAttribute("flags")));
+				tmp->SetToolTip(child->GetAttribute("tooltip"));
+				tmp->SetMinSize(min_size);
+				tmp->SetMaxSize(max_size);
+				tmp->SetForegroundColour(wxColour(fg_colors[0], fg_colors[1], fg_colors[2]));
+				tmp->SetBackgroundColour(wxColour(bg_colors[0], bg_colors[1], bg_colors[2]));
+				tmp->SetFont(wxFont(fontsize, static_cast<wxFontFamily>(fontfamily), static_cast<wxFontStyle>(fontstyle), static_cast<wxFontWeight>(fontweight), is_underlined != 0, wxString(fontname)));
+				objects[tmp] = new ObjectStructure(this, tmp, wxTypes::StaticLine);
+			}
+			if (str_type == "slider")
+			{
+				uint8_t fg_colors[3], bg_colors[3];
+				sscanf(child->GetAttribute("pos").c_str(), "%d,%d", &pos.x, &pos.y);
+				sscanf(child->GetAttribute("size").c_str(), "%d,%d", &size.x, &size.y);
+				sscanf(child->GetAttribute("min_size").c_str(), "%d,%d", &min_size.x, &min_size.y);
+				sscanf(child->GetAttribute("max_size").c_str(), "%d,%d", &max_size.x, &max_size.y);
+				sscanf(child->GetAttribute("fg_color").c_str(), "%hhd,%hhd,%hhd", &fg_colors[0], &fg_colors[1], &fg_colors[2]);
+				sscanf(child->GetAttribute("bg_color").c_str(), "%hhd,%hhd,%hhd", &bg_colors[0], &bg_colors[1], &bg_colors[2]);
+				sscanf(child->GetAttribute("font").c_str(), "%d,%d,%d,%d,%d,%[^\n]s", &fontsize, &fontfamily, &fontstyle, &fontweight, &is_underlined, fontname);
+				wxSlider* tmp = new wxSlider(this, wxID_ANY, wxAtoi(child->GetAttribute("value")), wxAtoi(child->GetAttribute("min")),
+					wxAtoi(child->GetAttribute("max")), pos, size, wxAtoi(child->GetAttribute("flags")));
+				tmp->SetToolTip(child->GetAttribute("tooltip"));
+				tmp->SetMinSize(min_size);
+				tmp->SetMaxSize(max_size);
+				tmp->SetForegroundColour(wxColour(fg_colors[0], fg_colors[1], fg_colors[2]));
+				tmp->SetBackgroundColour(wxColour(bg_colors[0], bg_colors[1], bg_colors[2]));
+				tmp->SetFont(wxFont(fontsize, static_cast<wxFontFamily>(fontfamily), static_cast<wxFontStyle>(fontstyle), static_cast<wxFontWeight>(fontweight), is_underlined != 0, wxString(fontname)));
+				objects[tmp] = new ObjectStructure(this, tmp, wxTypes::Slider);
+			}
+			if (str_type == "gauge")
+			{
+				uint8_t fg_colors[3], bg_colors[3];
+				sscanf(child->GetAttribute("pos").c_str(), "%d,%d", &pos.x, &pos.y);
+				sscanf(child->GetAttribute("size").c_str(), "%d,%d", &size.x, &size.y);
+				sscanf(child->GetAttribute("min_size").c_str(), "%d,%d", &min_size.x, &min_size.y);
+				sscanf(child->GetAttribute("max_size").c_str(), "%d,%d", &max_size.x, &max_size.y);
+				sscanf(child->GetAttribute("fg_color").c_str(), "%hhd,%hhd,%hhd", &fg_colors[0], &fg_colors[1], &fg_colors[2]);
+				sscanf(child->GetAttribute("bg_color").c_str(), "%hhd,%hhd,%hhd", &bg_colors[0], &bg_colors[1], &bg_colors[2]);
+				sscanf(child->GetAttribute("font").c_str(), "%d,%d,%d,%d,%d,%[^\n]s", &fontsize, &fontfamily, &fontstyle, &fontweight, &is_underlined, fontname);
+				wxGauge* tmp = new wxGauge(this, wxID_ANY, wxAtoi(child->GetAttribute("max")), pos, size, wxAtoi(child->GetAttribute("flags")));
+				tmp->SetValue(wxAtoi(child->GetAttribute("value")));
+				tmp->SetToolTip(child->GetAttribute("tooltip"));
+				tmp->SetMinSize(min_size);
+				tmp->SetMaxSize(max_size);
+				tmp->SetForegroundColour(wxColour(fg_colors[0], fg_colors[1], fg_colors[2]));
+				tmp->SetBackgroundColour(wxColour(bg_colors[0], bg_colors[1], bg_colors[2]));
+				tmp->SetFont(wxFont(fontsize, static_cast<wxFontFamily>(fontfamily), static_cast<wxFontStyle>(fontstyle), static_cast<wxFontWeight>(fontweight), is_underlined != 0, wxString(fontname)));
+				objects[tmp] = new ObjectStructure(this, tmp, wxTypes::Gauge);
+			}
+			if (str_type == "spincontrol")
+			{
+				uint8_t fg_colors[3], bg_colors[3];
+				sscanf(child->GetAttribute("pos").c_str(), "%d,%d", &pos.x, &pos.y);
+				sscanf(child->GetAttribute("size").c_str(), "%d,%d", &size.x, &size.y);
+				sscanf(child->GetAttribute("min_size").c_str(), "%d,%d", &min_size.x, &min_size.y);
+				sscanf(child->GetAttribute("max_size").c_str(), "%d,%d", &max_size.x, &max_size.y);
+				sscanf(child->GetAttribute("fg_color").c_str(), "%hhd,%hhd,%hhd", &fg_colors[0], &fg_colors[1], &fg_colors[2]);
+				sscanf(child->GetAttribute("bg_color").c_str(), "%hhd,%hhd,%hhd", &bg_colors[0], &bg_colors[1], &bg_colors[2]);
+				sscanf(child->GetAttribute("font").c_str(), "%d,%d,%d,%d,%d,%[^\n]s", &fontsize, &fontfamily, &fontstyle, &fontweight, &is_underlined, fontname);
+				wxSpinCtrl* tmp = new wxSpinCtrl(this, wxID_ANY, child->GetAttribute("label"), pos, size, wxAtoi(child->GetAttribute("flags")),
+					wxAtoi(child->GetAttribute("min")), wxAtoi(child->GetAttribute("max")), wxAtoi(child->GetAttribute("value")));
+				tmp->SetToolTip(child->GetAttribute("tooltip"));
+				tmp->SetMinSize(min_size);
+				tmp->SetMaxSize(max_size);
+				tmp->SetForegroundColour(wxColour(fg_colors[0], fg_colors[1], fg_colors[2]));
+				tmp->SetBackgroundColour(wxColour(bg_colors[0], bg_colors[1], bg_colors[2]));
+				tmp->SetFont(wxFont(fontsize, static_cast<wxFontFamily>(fontfamily), static_cast<wxFontStyle>(fontstyle), static_cast<wxFontWeight>(fontweight), is_underlined != 0, wxString(fontname)));
+				objects[tmp] = new ObjectStructure(this, tmp, wxTypes::SpinControl);
+			}
+			if (str_type == "spincontroldouble")
+			{
+				uint8_t fg_colors[3], bg_colors[3];
+				sscanf(child->GetAttribute("pos").c_str(), "%d,%d", &pos.x, &pos.y);
+				sscanf(child->GetAttribute("size").c_str(), "%d,%d", &size.x, &size.y);
+				sscanf(child->GetAttribute("min_size").c_str(), "%d,%d", &min_size.x, &min_size.y);
+				sscanf(child->GetAttribute("max_size").c_str(), "%d,%d", &max_size.x, &max_size.y);
+				sscanf(child->GetAttribute("fg_color").c_str(), "%hhd,%hhd,%hhd", &fg_colors[0], &fg_colors[1], &fg_colors[2]);
+				sscanf(child->GetAttribute("bg_color").c_str(), "%hhd,%hhd,%hhd", &bg_colors[0], &bg_colors[1], &bg_colors[2]);
+				sscanf(child->GetAttribute("font").c_str(), "%d,%d,%d,%d,%d,%[^\n]s", &fontsize, &fontfamily, &fontstyle, &fontweight, &is_underlined, fontname);
+				wxSpinCtrlDouble* tmp = new wxSpinCtrlDouble(this, wxID_ANY, child->GetAttribute("label"), pos, size, wxAtoi(child->GetAttribute("flags")),
+					wxAtoi(child->GetAttribute("min")), wxAtoi(child->GetAttribute("max")), wxAtoi(child->GetAttribute("value")), wxAtoi(child->GetAttribute("inc")));
+				tmp->SetToolTip(child->GetAttribute("tooltip"));
+				tmp->SetMinSize(min_size);
+				tmp->SetMaxSize(max_size);
+				tmp->SetForegroundColour(wxColour(fg_colors[0], fg_colors[1], fg_colors[2]));
+				tmp->SetBackgroundColour(wxColour(bg_colors[0], bg_colors[1], bg_colors[2]));
+				tmp->SetFont(wxFont(fontsize, static_cast<wxFontFamily>(fontfamily), static_cast<wxFontStyle>(fontstyle), static_cast<wxFontWeight>(fontweight), is_underlined != 0, wxString(fontname)));
+				objects[tmp] = new ObjectStructure(this, tmp, wxTypes::SpinCtrlDouble);
+			}
+			else if (str_type == "textcontrol")
+			{
+				uint8_t fg_colors[3], bg_colors[3];
+				sscanf(child->GetAttribute("pos").c_str(), "%d,%d", &pos.x, &pos.y);
+				sscanf(child->GetAttribute("size").c_str(), "%d,%d", &size.x, &size.y);
+				sscanf(child->GetAttribute("min_size").c_str(), "%d,%d", &min_size.x, &min_size.y);
+				sscanf(child->GetAttribute("max_size").c_str(), "%d,%d", &max_size.x, &max_size.y);
+				sscanf(child->GetAttribute("fg_color").c_str(), "%hhd,%hhd,%hhd", &fg_colors[0], &fg_colors[1], &fg_colors[2]);
+				sscanf(child->GetAttribute("bg_color").c_str(), "%hhd,%hhd,%hhd", &bg_colors[0], &bg_colors[1], &bg_colors[2]);
+				sscanf(child->GetAttribute("font").c_str(), "%d,%d,%d,%d,%d,%[^\n]s", &fontsize, &fontfamily, &fontstyle, &fontweight, &is_underlined, fontname);
+				wxTextCtrl* tmp = new wxTextCtrl(this, wxID_ANY, child->GetAttribute("label"), pos, size, wxAtoi(child->GetAttribute("flags")));
+				tmp->SetToolTip(child->GetAttribute("tooltip"));
+				tmp->SetMinSize(min_size);
+				tmp->SetMaxSize(max_size);
+				tmp->SetForegroundColour(wxColour(fg_colors[0], fg_colors[1], fg_colors[2]));
+				tmp->SetBackgroundColour(wxColour(bg_colors[0], bg_colors[1], bg_colors[2]));
+				tmp->SetFont(wxFont(fontsize, static_cast<wxFontFamily>(fontfamily), static_cast<wxFontStyle>(fontstyle), static_cast<wxFontWeight>(fontweight), is_underlined != 0, wxString(fontname)));
+				objects[tmp] = new ObjectStructure(this, tmp, wxTypes::TextControl);
+			}
+			else if (str_type == "togglebutton")
+			{
+				uint8_t fg_colors[3], bg_colors[3];
+				sscanf(child->GetAttribute("pos").c_str(), "%d,%d", &pos.x, &pos.y);
+				sscanf(child->GetAttribute("size").c_str(), "%d,%d", &size.x, &size.y);
+				sscanf(child->GetAttribute("min_size").c_str(), "%d,%d", &min_size.x, &min_size.y);
+				sscanf(child->GetAttribute("max_size").c_str(), "%d,%d", &max_size.x, &max_size.y);
+				sscanf(child->GetAttribute("fg_color").c_str(), "%hhd,%hhd,%hhd", &fg_colors[0], &fg_colors[1], &fg_colors[2]);
+				sscanf(child->GetAttribute("bg_color").c_str(), "%hhd,%hhd,%hhd", &bg_colors[0], &bg_colors[1], &bg_colors[2]);
+				sscanf(child->GetAttribute("font").c_str(), "%d,%d,%d,%d,%d,%[^\n]s", &fontsize, &fontfamily, &fontstyle, &fontweight, &is_underlined, fontname);
+				wxToggleButton* tmp = new wxToggleButton(this, wxID_ANY, child->GetAttribute("label"), pos, size, wxAtoi(child->GetAttribute("flags")));
+				tmp->SetToolTip(child->GetAttribute("tooltip"));
+				tmp->SetMinSize(min_size);
+				tmp->SetMaxSize(max_size);
+				tmp->SetForegroundColour(wxColour(fg_colors[0], fg_colors[1], fg_colors[2]));
+				tmp->SetBackgroundColour(wxColour(bg_colors[0], bg_colors[1], bg_colors[2]));
+				tmp->SetFont(wxFont(fontsize, static_cast<wxFontFamily>(fontfamily), static_cast<wxFontStyle>(fontstyle), static_cast<wxFontWeight>(fontweight), is_underlined != 0, wxString(fontname)));
+				objects[tmp] = new ObjectStructure(this, tmp, wxTypes::ToggleButton);
+			}
+			else if (str_type == "statictext")
+			{
+				uint8_t fg_colors[3], bg_colors[3];
+				sscanf(child->GetAttribute("pos").c_str(), "%d,%d", &pos.x, &pos.y);
+				sscanf(child->GetAttribute("size").c_str(), "%d,%d", &size.x, &size.y);
+				sscanf(child->GetAttribute("min_size").c_str(), "%d,%d", &min_size.x, &min_size.y);
+				sscanf(child->GetAttribute("max_size").c_str(), "%d,%d", &max_size.x, &max_size.y);
+				sscanf(child->GetAttribute("fg_color").c_str(), "%hhd,%hhd,%hhd", &fg_colors[0], &fg_colors[1], &fg_colors[2]);
+				sscanf(child->GetAttribute("bg_color").c_str(), "%hhd,%hhd,%hhd", &bg_colors[0], &bg_colors[1], &bg_colors[2]);
+				sscanf(child->GetAttribute("font").c_str(), "%d,%d,%d,%d,%d,%[^\n]s", &fontsize, &fontfamily, &fontstyle, &fontweight, &is_underlined, fontname);
+				wxStaticText* tmp = new wxStaticText(this, wxID_ANY, child->GetAttribute("label"), pos, size, wxAtoi(child->GetAttribute("flags")));
+				tmp->SetToolTip(child->GetAttribute("tooltip"));
+				tmp->SetMinSize(min_size);
+				tmp->SetMaxSize(max_size);
+				tmp->SetForegroundColour(wxColour(fg_colors[0], fg_colors[1], fg_colors[2]));
+				tmp->SetBackgroundColour(wxColour(bg_colors[0], bg_colors[1], bg_colors[2]));
+				tmp->SetFont(wxFont(fontsize, static_cast<wxFontFamily>(fontfamily), static_cast<wxFontStyle>(fontstyle), static_cast<wxFontWeight>(fontweight), is_underlined != 0, wxString(fontname)));
+				objects[tmp] = new ObjectStructure(this, tmp, wxTypes::Text);
+			}
+		}
+		child = child->GetNext();
+	}
+
 }

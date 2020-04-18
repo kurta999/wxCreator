@@ -95,7 +95,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\wxWidgets-3.1.3\lib\vc_dll;C:\wxWidgets-3.1.3\lib\vc_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>wxbase31ud.lib;wxmsw31ud_core.lib;wxmsw31ud_aui.lib;wxbase31ud_net.lib;wxmsw31ud_propgrid.lib;wxmsw31ud_stc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>wxbase31ud.lib;wxmsw31ud_core.lib;wxmsw31ud_aui.lib;wxbase31ud_net.lib;wxmsw31ud_propgrid.lib;wxmsw31ud_stc.lib;wxbase31ud_xml.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

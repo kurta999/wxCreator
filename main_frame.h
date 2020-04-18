@@ -100,6 +100,7 @@ private:
 	void MarkSelectedItem(void);
 	void OnPaint(wxPaintEvent& event);
 	void OnListCtrlSelChanged(wxTreeEvent& event);
+	void LoadFromXml(wxString xml_path);
 	template <class T> void SetPos(void* ptr, wxPoint& pos);
 	ObjectStructure* FindwxText(void* object_to_find = nullptr);
 
