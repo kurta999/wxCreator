@@ -70,6 +70,7 @@ public:
 	wxTimePickerCtrl* m_wxTimePickerCtrl = nullptr;
 	wxCalendarCtrl* m_wxCalendarCtrl = nullptr;
 	void OnClick(wxMouseEvent& event);
+	void LoadFromXml(wxString xml_path);
 	void* m_SelectedWidget = nullptr;
 	wxSpinCtrl* m_wxSpinCtrl = nullptr;
 	int m_speed = 1;
@@ -100,7 +101,6 @@ private:
 	void MarkSelectedItem(void);
 	void OnPaint(wxPaintEvent& event);
 	void OnListCtrlSelChanged(wxTreeEvent& event);
-	void LoadFromXml(wxString xml_path);
 	template <class T> void SetPos(void* ptr, wxPoint& pos);
 	ObjectStructure* FindwxText(void* object_to_find = nullptr);
 
@@ -166,6 +166,10 @@ public:
 	void OnAbout(wxCommandEvent& event);
 	void OnSize(wxSizeEvent& event);
 	void OnHelp(wxCommandEvent& event);
+	void OnOpen(wxCommandEvent& event);
+	void OnSave(wxCommandEvent& event);
+	void OnSaveAs(wxCommandEvent& event);
+	void SaveWidgets(void);
 	void Changeing(wxAuiNotebookEvent& event);
 	void OnMenuItemSelected(wxCommandEvent& event);
 	wxDECLARE_EVENT_TABLE();

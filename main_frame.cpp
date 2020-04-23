@@ -21,6 +21,9 @@
 #include "magic_enum.hpp"
 #include <wx/xml/xml.h>
 
+constexpr int WINDOW_SIZE_X = 1280;
+constexpr int WINDOW_SIZE_Y = 1024;
+
 enum
 {
 	PGID = 1,
@@ -198,6 +201,9 @@ static const long gauge_style_values[] = {
 wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
 EVT_SIZE(MyFrame::OnSize)
 EVT_MENU(ID_Hello, MyFrame::OnHelp)
+EVT_MENU(wxID_OPEN, MyFrame::OnOpen)
+EVT_MENU(wxID_SAVE, MyFrame::OnSave)
+EVT_MENU(wxID_SAVEAS, MyFrame::OnSaveAs)
 wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(MyPanel, wxPanel)
@@ -213,7 +219,7 @@ wxEND_EVENT_TABLE()
 uint16_t wx_list[static_cast<int>(wxTypes::Maximum)];
 std::unordered_map<void*, ObjectStructure*> objects;
 wxAuiNotebook* ctrl;
-
+wxString file_path;
 
 template <class T> wxString GetNameFromEnum(T to_get)
 {
@@ -257,12 +263,215 @@ void MyFrame::OnHelp(wxCommandEvent& event)
 		Re-selecting an object can be done with Left mouse button\nMove Up & Down, Left & Right with keys\nResize them with 4, 8, 6, 2", "Help");
 }
 
+void MyFrame::OnOpen(wxCommandEvent& event)
+{
+	wxFileDialog openFileDialog(this, _("Open XML file"), "", "", "XML files (*.xml)|*.xml", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+	if (openFileDialog.ShowModal() == wxID_CANCEL)
+		return;
+
+	wxString path = openFileDialog.GetPath();
+	panel->LoadFromXml(path);
+	file_path = path;
+}
+
+void MyFrame::OnSave(wxCommandEvent& event)
+{
+	if (file_path.IsEmpty())
+	{
+		wxFileDialog saveFileDialog(this, _("Save XML file"), "", "", "XML files (*.xml)|*.xml", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+		if (saveFileDialog.ShowModal() == wxID_CANCEL)
+			return;
+		file_path = saveFileDialog.GetPath();
+	}
+	SaveWidgets();
+}
+
+void MyFrame::OnSaveAs(wxCommandEvent& event)
+{
+	wxFileDialog saveFileDialog(this, _("Save XML file"), "", "", "XML files (*.xml)|*.xml", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (saveFileDialog.ShowModal() == wxID_CANCEL)
+		return;
+	file_path = saveFileDialog.GetPath();
+	SaveWidgets();
+}
+
+void MyFrame::SaveWidgets(void)
+{
+	wxFile file;
+	bool status = file.Open(file_path, wxFile::OpenMode::write);
+	if (!status)
+		return;
+	wxString lines = "<wxCreatorXmlFile>\n";
+	for (auto x : objects)
+	{
+		if (!x.first || !x.second) continue;
+
+		if (x.second->type == wxTypes::Button)
+		{
+			wxButton* t = reinterpret_cast<wxButton*>(x.first);
+			wxFont font = t->GetFont();
+			lines += wxString::Format("\t<widget type=\"button\" id=\"-1\" name=\"%s\" label=\"%s\" tooltip=\"%s\" pos=\"%d,%d\" size=\"%d,%d\" min_size=\"%d,%d\" max_size=\"%d,%d\"\
+ fg_color=\"%d,%d,%d\" bg_color=\"%d,%d,%d\" font=\"%d,%d,%d,%d,%d,%s\" flags=\"%d\" />\n", x.second->name, t->GetLabelText(), t->GetToolTipText(),
+				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, t->GetMinSize().x, t->GetMinSize().y, t->GetMaxSize().x, t->GetMaxSize().y,
+				t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue(),
+				t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue(), font.GetPointSize(), font.GetFamily(), font.GetStyle(), font.GetWeight(),
+				font.GetUnderlined(), font.GetFaceName(), t->GetWindowStyleFlag());
+		}
+		else if (x.second->type == wxTypes::ComboBox)
+		{
+			wxComboBox* t = reinterpret_cast<wxComboBox*>(x.first);
+			wxFont font = t->GetFont();
+			lines += wxString::Format("\t<widget type=\"combobox\" id=\"-1\" name=\"%s\" label=\"%s\" tooltip=\"%s\" pos=\"%d,%d\" size=\"%d,%d\" min_size=\"%d,%d\" max_size=\"%d,%d\"\
+ fg_color=\"%d,%d,%d\" bg_color=\"%d,%d,%d\" font=\"%d,%d,%d,%d,%d,%s\" flags=\"%d\" />\n", x.second->name, t->GetLabelText(), t->GetToolTipText(),
+				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, t->GetMinSize().x, t->GetMinSize().y, t->GetMaxSize().x, t->GetMaxSize().y,
+				t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue(),
+				t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue(), font.GetPointSize(), font.GetFamily(), font.GetStyle(), font.GetWeight(),
+				font.GetUnderlined(), font.GetFaceName(), t->GetWindowStyleFlag());
+		}
+		else if (x.second->type == wxTypes::Choise)
+		{
+			wxChoice* t = reinterpret_cast<wxChoice*>(x.first);
+			wxFont font = t->GetFont();
+			lines += wxString::Format("\t<widget type=\"choice\" id=\"-1\" name=\"%s\" tooltip=\"%s\" pos=\"%d,%d\" size=\"%d,%d\" min_size=\"%d,%d\" max_size=\"%d,%d\"\
+ fg_color=\"%d,%d,%d\" bg_color=\"%d,%d,%d\" font=\"%d,%d,%d,%d,%d,%s\" flags=\"%d\" />\n", x.second->name, t->GetToolTipText(),
+				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, t->GetMinSize().x, t->GetMinSize().y, t->GetMaxSize().x, t->GetMaxSize().y,
+				t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue(),
+				t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue(), font.GetPointSize(), font.GetFamily(), font.GetStyle(), font.GetWeight(),
+				font.GetUnderlined(), font.GetFaceName(), t->GetWindowStyleFlag());
+		}
+		else if (x.second->type == wxTypes::ListBox)
+		{
+			wxListBox* t = reinterpret_cast<wxListBox*>(x.first);
+			wxFont font = t->GetFont();
+			lines += wxString::Format("\t<widget type=\"choice\" id=\"-1\" name=\"%s\" tooltip=\"%s\" pos=\"%d,%d\" size=\"%d,%d\" min_size=\"%d,%d\" max_size=\"%d,%d\"\
+ fg_color=\"%d,%d,%d\" bg_color=\"%d,%d,%d\" font=\"%d,%d,%d,%d,%d,%s\" flags=\"%d\" />\n", x.second->name, t->GetToolTipText(),
+				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, t->GetMinSize().x, t->GetMinSize().y, t->GetMaxSize().x, t->GetMaxSize().y,
+				t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue(),
+				t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue(), font.GetPointSize(), font.GetFamily(), font.GetStyle(), font.GetWeight(),
+				font.GetUnderlined(), font.GetFaceName(), t->GetWindowStyleFlag());
+		}
+		else if (x.second->type == wxTypes::CheckBox)
+		{
+			wxCheckBox* t = reinterpret_cast<wxCheckBox*>(x.first);
+			wxFont font = t->GetFont();
+			lines += wxString::Format("\t<widget type=\"combobox\" id=\"-1\" name=\"%s\" label=\"%s\" tooltip=\"%s\" pos=\"%d,%d\" size=\"%d,%d\" min_size=\"%d,%d\" max_size=\"%d,%d\"\
+ fg_color=\"%d,%d,%d\" bg_color=\"%d,%d,%d\" font=\"%d,%d,%d,%d,%d,%s\" flags=\"%d\" />\n", x.second->name, t->GetLabelText(), t->GetToolTipText(),
+				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, t->GetMinSize().x, t->GetMinSize().y, t->GetMaxSize().x, t->GetMaxSize().y,
+				t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue(),
+				t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue(), font.GetPointSize(), font.GetFamily(), font.GetStyle(), font.GetWeight(),
+				font.GetUnderlined(), font.GetFaceName(), t->GetWindowStyleFlag());
+		}
+		else if (x.second->type == wxTypes::RadioButton)
+		{
+			wxRadioButton* t = reinterpret_cast<wxRadioButton*>(x.first);
+			wxFont font = t->GetFont();
+			lines += wxString::Format("\t<widget type=\"combobox\" id=\"-1\" name=\"%s\" label=\"%s\" tooltip=\"%s\" pos=\"%d,%d\" size=\"%d,%d\" min_size=\"%d,%d\" max_size=\"%d,%d\"\
+ fg_color=\"%d,%d,%d\" bg_color=\"%d,%d,%d\" font=\"%d,%d,%d,%d,%d,%s\" flags=\"%d\" />\n", x.second->name, t->GetLabelText(), t->GetToolTipText(),
+				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, t->GetMinSize().x, t->GetMinSize().y, t->GetMaxSize().x, t->GetMaxSize().y,
+				t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue(),
+				t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue(), font.GetPointSize(), font.GetFamily(), font.GetStyle(), font.GetWeight(),
+				font.GetUnderlined(), font.GetFaceName(), t->GetWindowStyleFlag());
+		}
+		else if (x.second->type == wxTypes::StaticLine)
+		{
+			wxStaticLine* t = reinterpret_cast<wxStaticLine*>(x.first);
+			wxFont font = t->GetFont();
+			lines += wxString::Format("\t<widget type=\"staticline\" id=\"-1\" name=\"%s\" tooltip=\"%s\" pos=\"%d,%d\" size=\"%d,%d\" min_size=\"%d,%d\" max_size=\"%d,%d\"\
+ fg_color=\"%d,%d,%d\" bg_color=\"%d,%d,%d\" font=\"%d,%d,%d,%d,%d,%s\" flags=\"%d\" />\n", x.second->name, t->GetToolTipText(),
+				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, t->GetMinSize().x, t->GetMinSize().y, t->GetMaxSize().x, t->GetMaxSize().y,
+				t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue(),
+				t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue(), font.GetPointSize(), font.GetFamily(), font.GetStyle(), font.GetWeight(),
+				font.GetUnderlined(), font.GetFaceName(), t->GetWindowStyleFlag());
+		}
+		else if (x.second->type == wxTypes::Slider)
+		{
+			wxSlider* t = reinterpret_cast<wxSlider*>(x.first);
+			wxFont font = t->GetFont();
+			lines += wxString::Format("\t<widget type=\"slider\" id=\"-1\" name=\"%s\" tooltip=\"%s\" value=\"%d\" min=\"%d\" max=\"%d\" pos=\"%d,%d\" size=\"%d,%d\" min_size=\"%d,%d\" max_size=\"%d,%d\"\
+ fg_color=\"%d,%d,%d\" bg_color=\"%d,%d,%d\" font=\"%d,%d,%d,%d,%d,%s\" flags=\"%d\" />\n", x.second->name, t->GetToolTipText(), t->GetValue(), t->GetMin(), t->GetMax(),
+				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, t->GetMinSize().x, t->GetMinSize().y, t->GetMaxSize().x, t->GetMaxSize().y,
+				t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue(),
+				t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue(), font.GetPointSize(), font.GetFamily(), font.GetStyle(), font.GetWeight(),
+				font.GetUnderlined(), font.GetFaceName(), t->GetWindowStyleFlag());
+		}		
+		else if (x.second->type == wxTypes::Gauge)
+		{
+			wxGauge* t = reinterpret_cast<wxGauge*>(x.first);
+			wxFont font = t->GetFont();
+			lines += wxString::Format("\t<widget type=\"gauge\" id=\"-1\" name=\"%s\" tooltip=\"%s\" value=\"%d\" max=\"%d\" pos=\"%d,%d\" size=\"%d,%d\" min_size=\"%d,%d\" max_size=\"%d,%d\"\
+ fg_color=\"%d,%d,%d\" bg_color=\"%d,%d,%d\" font=\"%d,%d,%d,%d,%d,%s\" flags=\"%d\" />\n", x.second->name, t->GetToolTipText(), t->GetValue(), 100,
+				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, t->GetMinSize().x, t->GetMinSize().y, t->GetMaxSize().x, t->GetMaxSize().y,
+				t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue(),
+				t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue(), font.GetPointSize(), font.GetFamily(), font.GetStyle(), font.GetWeight(),
+				font.GetUnderlined(), font.GetFaceName(), t->GetWindowStyleFlag());
+		}
+		else if (x.second->type == wxTypes::SpinControl)
+		{
+			wxSpinCtrl* t = reinterpret_cast<wxSpinCtrl*>(x.first);
+			wxFont font = t->GetFont();
+			lines += wxString::Format("\t<widget type=\"spincontrol\" id=\"-1\" name=\"%s\" tooltip=\"%s\" value=\"%d\" min=\"%d\" max=\"%d\" pos=\"%d,%d\" size=\"%d,%d\" min_size=\"%d,%d\" max_size=\"%d,%d\"\
+ fg_color=\"%d,%d,%d\" bg_color=\"%d,%d,%d\" font=\"%d,%d,%d,%d,%d,%s\" flags=\"%d\" />\n", x.second->name, t->GetToolTipText(), t->GetValue(), t->GetMin(), t->GetMax(),
+				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, t->GetMinSize().x, t->GetMinSize().y, t->GetMaxSize().x, t->GetMaxSize().y,
+				t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue(),
+				t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue(), font.GetPointSize(), font.GetFamily(), font.GetStyle(), font.GetWeight(),
+				font.GetUnderlined(), font.GetFaceName(), t->GetWindowStyleFlag());
+		}
+		else if (x.second->type == wxTypes::SpinCtrlDouble)
+		{
+			wxSpinCtrlDouble* t = reinterpret_cast<wxSpinCtrlDouble*>(x.first);
+			wxFont font = t->GetFont();
+			lines += wxString::Format("\t<widget type=\"spincontroldouble\" id=\"-1\" name=\"%s\" tooltip=\"%s\" value=\"%d\" min=\"%d\" max=\"%d\" inc=\"%d\" pos=\"%d,%d\" size=\"%d,%d\" min_size=\"%d,%d\" max_size=\"%d,%d\"\
+ fg_color=\"%d,%d,%d\" bg_color=\"%d,%d,%d\" font=\"%d,%d,%d,%d,%d,%s\" flags=\"%d\" />\n", x.second->name, t->GetToolTipText(), t->GetValue(), t->GetMin(), t->GetMax(), t->GetIncrement(),
+				t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, t->GetMinSize().x, t->GetMinSize().y, t->GetMaxSize().x, t->GetMaxSize().y,
+				t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue(),
+				t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue(), font.GetPointSize(), font.GetFamily(), font.GetStyle(), font.GetWeight(),
+				font.GetUnderlined(), font.GetFaceName(), t->GetWindowStyleFlag());
+		}
+		else if (x.second->type == wxTypes::TextControl)
+		{
+			wxTextCtrl* t = reinterpret_cast<wxTextCtrl*>(x.first);
+			wxFont font = t->GetFont();
+			lines += wxString::Format("\t<widget type=\"textcontrol\" id=\"-1\" name=\"%s\" label=\"%s\" tooltip=\"%s\" pos=\"%d,%d\" size=\"%d,%d\" min_size=\"%d,%d\" max_size=\"%d,%d\"\
+ fg_color=\"%d,%d,%d\" bg_color=\"%d,%d,%d\" font=\"%d,%d,%d,%d,%d,%s\" flags=\"%d\" />\n", x.second->name, t->GetLabelText(), t->GetToolTipText(),
+			t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, t->GetMinSize().x, t->GetMinSize().y, t->GetMaxSize().x, t->GetMaxSize().y,
+			t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue(),
+			t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue(), font.GetPointSize(), font.GetFamily(), font.GetStyle(), font.GetWeight(),
+			font.GetUnderlined(), font.GetFaceName(), t->GetWindowStyleFlag());
+		}
+		else if (x.second->type == wxTypes::ToggleButton)
+		{
+			wxToggleButton* t = reinterpret_cast<wxToggleButton*>(x.first);
+			wxFont font = t->GetFont();
+			lines += wxString::Format("\t<widget type=\"togglebutton\" id=\"-1\" name=\"%s\" label=\"%s\" tooltip=\"%s\" pos=\"%d,%d\" size=\"%d,%d\" min_size=\"%d,%d\" max_size=\"%d,%d\"\
+ fg_color=\"%d,%d,%d\" bg_color=\"%d,%d,%d\" font=\"%d,%d,%d,%d,%d,%s\" flags=\"%d\" />\n", x.second->name, t->GetLabelText(), t->GetToolTipText(),
+			t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, t->GetMinSize().x, t->GetMinSize().y, t->GetMaxSize().x, t->GetMaxSize().y,
+			t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue(),
+			t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue(), font.GetPointSize(), font.GetFamily(), font.GetStyle(), font.GetWeight(),
+			font.GetUnderlined(), font.GetFaceName(), t->GetWindowStyleFlag());
+		}
+		else if (x.second->type == wxTypes::Text)
+		{
+			wxToggleButton* t = reinterpret_cast<wxToggleButton*>(x.first);
+			wxFont font = t->GetFont();
+			lines += wxString::Format("\t<widget type=\"togglebutton\" id=\"-1\" name=\"%s\" label=\"%s\" tooltip=\"%s\" pos=\"%d,%d\" size=\"%d,%d\" min_size=\"%d,%d\" max_size=\"%d,%d\"\
+ fg_color=\"%d,%d,%d\" bg_color=\"%d,%d,%d\" font=\"%d,%d,%d,%d,%d,%s\" flags=\"%d\" />\n", x.second->name, t->GetLabelText(), t->GetToolTipText(),
+			t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, t->GetMinSize().x, t->GetMinSize().y, t->GetMaxSize().x, t->GetMaxSize().y,
+			t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue(),
+			t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue(), font.GetPointSize(), font.GetFamily(), font.GetStyle(), font.GetWeight(),
+			font.GetUnderlined(), font.GetFaceName(), t->GetWindowStyleFlag());
+		}
+	}
+	lines += "</wxCreatorXmlFile>\n";
+	file.Write(lines);
+	file.Close();
+}
+
 void MyFrame::Changeing(wxAuiNotebookEvent& event)
 {
 	wxString str;
 	for (auto x : objects)
 	{
-		if (!x.first) continue;
+		if (!x.first || !x.second) continue;
 		if (x.second->type == wxTypes::Button)
 		{
 			wxStaticText* t = reinterpret_cast<wxStaticText*>(x.first);
@@ -545,17 +754,19 @@ void MyFrame::OnMenuItemSelected(wxCommandEvent& event)
 
 MyFrame::MyFrame(const wxString& title)
 	: wxFrame(NULL, wxID_ANY, title, wxDefaultPosition,
-		wxSize(1280, 1024))
+		wxSize(WINDOW_SIZE_X, WINDOW_SIZE_Y))
 {
 	m_mgr.SetManagedWindow(this);
 	wxMenu* menuFile = new wxMenu;
-	menuFile->Append(ID_Hello, "&Read help\tCtrl-H",
-		"Read description about this program");
+	menuFile->Append(wxID_OPEN, "&Open file\tCtrl-O", "Open file");
+	menuFile->Append(wxID_SAVE, "&Save file\tCtrl-S", "Save file");
+	menuFile->Append(wxID_SAVEAS, "&Save file As\tCtrl-S", "Save file As other");
+	menuFile->Append(ID_Hello, "&Read help\tCtrl-H", "Read description about this program");
 	menuFile->Append(wxID_EXIT);
 	wxMenu* menuHelp = new wxMenu;
 	menuHelp->Append(wxID_ABOUT);
 	wxMenuBar* menuBar = new wxMenuBar;
-	menuBar->Append(menuFile, "&Help");
+	menuBar->Append(menuFile, "&File");
 	SetMenuBar(menuBar);
 
 	CreateStatusBar();
@@ -615,6 +826,9 @@ wxPGProperty* m_pgSliderStyle;
 wxPGProperty* m_pgStaticTextStyle;
 wxPGProperty* m_pgTextCtrlStyle;
 wxPGProperty* m_pgComboBoxStyle;
+wxPGProperty* m_pgChoiseStyle;
+wxPGProperty* m_pgCheckboxStyle;
+wxPGProperty* m_pgGaugeStyle;
 wxPropertyGrid* m_propertyGrid;
 
 
@@ -670,6 +884,21 @@ public:
 		m_combinedFlags5.Add(WXSIZEOF(combobox_style_flags), combobox_style_flags, combobox_style_values);
 		m_pgComboBoxStyle = m_propertyGrid->Append(new wxFlagsProperty(wxT("ComboBox flags"), wxPG_LABEL, m_combinedFlags5));
 		m_propertyGrid->SetPropertyAttribute("ComboBox flags", wxPG_BOOL_USE_CHECKBOX, true, wxPG_RECURSE);
+
+		wxPGChoices m_combinedFlags6;
+		m_combinedFlags6.Add(WXSIZEOF(choice_style_flags), choice_style_flags, choice_style_values);
+		m_pgChoiseStyle = m_propertyGrid->Append(new wxFlagsProperty(wxT("Choice flags"), wxPG_LABEL, m_combinedFlags6));
+		m_propertyGrid->SetPropertyAttribute("Choice flags", wxPG_BOOL_USE_CHECKBOX, true, wxPG_RECURSE);
+
+		wxPGChoices m_combinedFlags7;
+		m_combinedFlags7.Add(WXSIZEOF(checkbox_style_flags), checkbox_style_flags, checkbox_style_values);
+		m_pgCheckboxStyle = m_propertyGrid->Append(new wxFlagsProperty(wxT("Checkbox flags"), wxPG_LABEL, m_combinedFlags7));
+		m_propertyGrid->SetPropertyAttribute("Checkbox flags", wxPG_BOOL_USE_CHECKBOX, true, wxPG_RECURSE);
+	
+		wxPGChoices m_combinedFlags8;
+		m_combinedFlags8.Add(WXSIZEOF(gauge_style_flags), gauge_style_flags, gauge_style_values);
+		m_pgGaugeStyle = m_propertyGrid->Append(new wxFlagsProperty(wxT("Gauge flags"), wxPG_LABEL, m_combinedFlags8));
+		m_propertyGrid->SetPropertyAttribute("Gauge flags", wxPG_BOOL_USE_CHECKBOX, true, wxPG_RECURSE);
 	}
 
 	void Update(std::pair<void*, ObjectStructure*> pair)
@@ -773,8 +1002,6 @@ MyPanel::MyPanel(wxFrame* parent)
 	m_TreeCtrl = new wxTreeCtrl(this, TreeTest_Ctrl, wxPoint(850, 0), wxSize(300, 300), wxTR_DEFAULT_STYLE);
 	m_RootItem = m_TreeCtrl->AddRoot("Items");
 	m_propgrid = new PropertyGrid(this, 100, wxT("0,0"), wxT("0,0"), wxColor(*wxRED));
-
-
 
 	m_wxButton = new wxButton(this, wxID_ANY, wxT("btn"), wxPoint(0, 815), wxSize(25, 25), 0);
 	m_wxButton->SetToolTip("wxButton");
@@ -1488,18 +1715,14 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 		{
 			long flags;
 			property->GetValue().Convert(&flags);
-
 			wxButton* old = ((wxButton*)(m_SelectedWidget));
 			void* tmp = new wxButton(this, wxID_ANY, old->GetLabelText(), old->GetPosition(), old->GetSize(), flags);
 			old->Destroy();
-
 			auto nodeHandler = objects.extract(old);
 			nodeHandler.key() = tmp;
 			objects.insert(std::move(nodeHandler));
-
 			old = nullptr;
 			m_SelectedWidget = tmp;
-
 			((wxButton*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
 
 		}
@@ -1510,18 +1733,14 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 		{
 			long flags;
 			property->GetValue().Convert(&flags);
-
 			wxSlider* old = ((wxSlider*)(m_SelectedWidget));
 			void* tmp = new wxSlider(this, wxID_ANY, 80, 0, 100, old->GetPosition(), old->GetSize(), flags);
 			old->Destroy();
-			
 			auto nodeHandler = objects.extract(old);
 			nodeHandler.key() = tmp;
 			objects.insert(std::move(nodeHandler));
-
 			old = nullptr;
 			m_SelectedWidget = tmp;
-			
 			((wxSlider*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
 		}
 	}	
@@ -1531,7 +1750,15 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 		{
 			long flags;
 			property->GetValue().Convert(&flags);
-			((wxStaticText*)m_SelectedWidget)->SetWindowStyleFlag(flags);
+			wxStaticText* old = ((wxStaticText*)(m_SelectedWidget));
+			void* tmp = new wxStaticText(this, wxID_ANY, old->GetLabelText(), old->GetPosition(), old->GetSize(), flags);
+			old->Destroy();
+			auto nodeHandler = objects.extract(old);
+			nodeHandler.key() = tmp;
+			objects.insert(std::move(nodeHandler));
+			old = nullptr;
+			m_SelectedWidget = tmp;
+			((wxStaticText*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
 		}
 	}
 	else if (property == m_pgTextCtrlStyle)
@@ -1540,7 +1767,15 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 		{
 			long flags;
 			property->GetValue().Convert(&flags);
-			((wxTextCtrl*)m_SelectedWidget)->SetWindowStyleFlag(flags);
+			wxTextCtrl* old = ((wxTextCtrl*)(m_SelectedWidget));
+			void* tmp = new wxTextCtrl(this, wxID_ANY, old->GetLabelText(), old->GetPosition(), old->GetSize(), flags);
+			old->Destroy();
+			auto nodeHandler = objects.extract(old);
+			nodeHandler.key() = tmp;
+			objects.insert(std::move(nodeHandler));
+			old = nullptr;
+			m_SelectedWidget = tmp;
+			((wxStaticText*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
 		}
 	}
 	else if (property == m_pgComboBoxStyle)
@@ -1549,7 +1784,51 @@ void MyPanel::OnPropertyGridChange(wxPropertyGridEvent& event)
 		{
 			long flags;
 			property->GetValue().Convert(&flags);
-			((wxComboBox*)m_SelectedWidget)->SetWindowStyleFlag(flags);
+			wxComboBox* old = ((wxComboBox*)(m_SelectedWidget));
+			wxArrayString a;
+			void* tmp = new wxComboBox(this, wxID_ANY, old->GetLabelText(), old->GetPosition(), old->GetSize(), a, flags);
+			old->Destroy();
+			auto nodeHandler = objects.extract(old);
+			nodeHandler.key() = tmp;
+			objects.insert(std::move(nodeHandler));
+			old = nullptr;
+			m_SelectedWidget = tmp;
+			((wxComboBox*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+		}
+	}
+	else if (property == m_pgChoiseStyle)
+	{
+		if (t != nullptr && t->type == wxTypes::Choise)
+		{
+			long flags;
+			property->GetValue().Convert(&flags);
+			wxChoice* old = ((wxChoice*)(m_SelectedWidget));
+			wxArrayString a;
+			void* tmp = new wxChoice(this, wxID_ANY, old->GetPosition(), old->GetSize(), a, flags);
+			old->Destroy();
+			auto nodeHandler = objects.extract(old);
+			nodeHandler.key() = tmp;
+			objects.insert(std::move(nodeHandler));
+			old = nullptr;
+			m_SelectedWidget = tmp;
+			((wxChoice*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
+		}
+	}
+	else if (property == m_pgGaugeStyle)
+	{
+		if (t != nullptr && t->type == wxTypes::Gauge)
+		{
+			long flags;
+			property->GetValue().Convert(&flags);
+			wxGauge* old = ((wxGauge*)(m_SelectedWidget));
+			void* tmp = new wxGauge(this, wxID_ANY, 100, old->GetPosition(), old->GetSize(), flags);
+			old->Destroy();
+			auto nodeHandler = objects.extract(old);
+			nodeHandler.key() = tmp;
+			objects.insert(std::move(nodeHandler));
+			old = nullptr;
+			m_SelectedWidget = tmp;
+			((wxGauge*)(tmp))->Bind(wxEVT_LEFT_DOWN, &MyPanel::OnClick, this);
 		}
 	}
 }
@@ -1595,6 +1874,17 @@ void MyPanel::MarkSelectedItem(void)
 		dc.SetPen(wxPen(*wxRED, 1));
 		dc.DrawRectangle(pos.x - 1, pos.y - 1, size.x + 2, size.y + 2);
 	}
+	/*
+	dc.SetPen(wxPen(*wxBLACK, 1));
+	for (int x = 0; x != 1024; x++)
+	{
+		for (int y = 0; y != 768; y++)
+		{
+			if(x % 10 == 0 && y % 10 == 0)
+				dc.DrawPoint(x, y);
+		}
+	}
+	*/
 }
 
 void MyPanel::OnPaint(wxPaintEvent& event)
@@ -1620,7 +1910,7 @@ void MyPanel::OnListCtrlSelChanged(wxTreeEvent& event)
 void MyPanel::LoadFromXml(wxString xml_path)
 {
 	wxXmlDocument doc;
-	if (!doc.Load(wxT("meta.xml")))
+	if (!doc.Load(xml_path))
 		return;
 
 	wxString a = doc.GetRoot()->GetName();
