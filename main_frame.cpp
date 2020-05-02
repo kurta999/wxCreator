@@ -269,6 +269,13 @@ void MyFrame::OnOpen(wxCommandEvent& event)
 	if (openFileDialog.ShowModal() == wxID_CANCEL)
 		return;
 
+	for (auto x : objects)
+	{
+		if (!x.first || !x.second) continue;
+		wxStaticText* t = reinterpret_cast<wxStaticText*>(x.first);
+		t->Destroy();
+	}
+	objects.clear();
 	wxString path = openFileDialog.GetPath();
 	panel->LoadFromXml(path);
 	file_path = path;
