@@ -473,6 +473,61 @@ void MyFrame::SaveWidgets(void)
 	file.Close();
 }
 
+void MyFrame::AddFlags(wxString& wxstr, void* widget, ObjectStructure* obj, const long* to_pointer, const wxString* to_pointer_str, const long max_array_size)
+{
+	wxStaticText* t = reinterpret_cast<wxStaticText*>(widget);
+	int counter = 0;
+	for (uint8_t i = 0; i != max_array_size; i++)
+	{
+		if (t->GetWindowStyleFlag() & to_pointer[i])
+		{
+			if (counter)
+				wxstr += " | ";
+			wxstr += to_pointer_str[i];
+			counter++;
+		}
+	}
+	if (wxstr.IsEmpty())
+		wxstr = "0";
+}
+
+void MyFrame::AddFontAndColor(wxString& wxstr, void* widget, ObjectStructure* obj)
+{
+	wxStaticText* t = reinterpret_cast<wxStaticText*>(widget);
+	wxString tooltip = t->GetToolTipText();
+	if(!tooltip.IsEmpty())
+		wxstr += wxString::Format("%s->SetToolTip(\"%s\");\n", obj->name, tooltip);
+	if(obj->fg_color_changed)
+		wxstr += wxString::Format("%s->SetForegroundColour(wxColour(%d, %d, %d));\n",
+			obj->name, t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue());
+	if(obj->bg_color_changed)
+		wxstr += wxString::Format("%s->SetBackgroundColour(wxColour(%d, %d, %d));\n",
+			obj->name, t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue());
+	wxSize min_size = t->GetMinSize();
+	if(min_size.x != -1 || min_size.y != -1)
+		wxstr += wxString::Format("%s->SetMinSize(wxPoint(%d, %d));\n", obj->name, min_size.x, min_size.y);
+	wxSize max_size = t->GetMaxSize();
+	if(max_size.x != -1 || max_size.y != -1)
+		wxstr += wxString::Format("%s->SetMaxSize(wxPoint(%d, %d));\n", obj->name, max_size.x, max_size.y);
+	wxFont font = t->GetFont();
+	wxString strFontPointSize;
+	if (font.GetPointSize() != -1)
+		strFontPointSize = wxString::Format("%d", font.GetPointSize());
+	else
+		strFontPointSize = wxString("wxNORMAL_FONT->GetPointSize()");
+	if (font.GetFamily() != wxFONTFAMILY_DEFAULT || !font.GetFaceName().IsEmpty() || font.GetStyle() != wxFONTSTYLE_NORMAL || font.GetWeight() != wxFONTWEIGHT_NORMAL
+		|| font.GetUnderlined())
+	{
+		wxFontWeight a = font.GetWeight();
+		wxstr += wxString::Format("%s->SetFont( wxFont(%s, %s, %s, %s, %s, wxT(\"%s\")));\n",
+			obj->name, strFontPointSize, GetNameFromEnum<wxFontFamily>(font.GetFamily()), GetNameFromEnum<wxFontStyle>(font.GetStyle()),
+			GetNameFromEnum<wxFontWeight>(a),
+			font.GetUnderlined() ? wxString("true") : wxString("false"), font.GetFaceName());
+		Sleep(10);
+	}
+	wxstr += "\n";
+}
+
 void MyFrame::Changeing(wxAuiNotebookEvent& event)
 {
 	wxString str;
@@ -483,182 +538,175 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 		{
 			wxStaticText* t = reinterpret_cast<wxStaticText*>(x.first);
 			wxString flagsStr;
-			int counter = 0;
-			for (uint8_t i = 0; i != WXSIZEOF(button_style_values); i++)
-			{
-				if (t->GetWindowStyleFlag() & button_style_values[i])
-				{
-					if (counter)
-						flagsStr += " | ";
-					flagsStr += button_style_flags[i];
-					counter++;
-				}
-			}
-			if (flagsStr.IsEmpty())
-				flagsStr = "0";
+			AddFlags(flagsStr, x.first, x.second, button_style_values, button_style_flags, WXSIZEOF(button_style_flags));
 			str += wxString::Format("%s = new wxButton(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), %s);\n",
 				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, flagsStr);
-			wxString tooltip = t->GetToolTipText();
-			if(!tooltip.IsEmpty())
-				str += wxString::Format("%s->SetToolTip(\"%s\");\n", x.second->name, tooltip);
-			if(x.second->fg_color_changed)
-				str += wxString::Format("%s->SetForegroundColour(wxColour(%d, %d, %d));\n", 
-					x.second->name, t->GetForegroundColour().Red(), t->GetForegroundColour().Green(), t->GetForegroundColour().Blue());
-			if(x.second->bg_color_changed)
-				str += wxString::Format("%s->SetBackgroundColour(wxColour(%d, %d, %d));\n", 
-					x.second->name, t->GetBackgroundColour().Red(), t->GetBackgroundColour().Green(), t->GetBackgroundColour().Blue());
-
-			wxSize min_size = t->GetMinSize();
-			if(min_size.x != -1 || min_size.y != -1)
-				str += wxString::Format("%s->SetMinSize(wxPoint(%d, %d));\n", x.second->name, min_size.x, min_size.y);
-			wxSize max_size = t->GetMaxSize();
-			if(max_size.x != -1 || max_size.y != -1)
-				str += wxString::Format("%s->SetMaxSize(wxPoint(%d, %d));\n", x.second->name, max_size.x, max_size.y);
-			wxFont font = t->GetFont();
-			wxString strFontPointSize;
-			if (font.GetPointSize() != -1)
-				strFontPointSize = wxString::Format("%d", font.GetPointSize());
-			else
-				strFontPointSize = wxString("wxNORMAL_FONT->GetPointSize()");
-			if (font.GetFamily() != wxFONTFAMILY_DEFAULT || !font.GetFaceName().IsEmpty() || font.GetStyle() != wxFONTSTYLE_NORMAL || font.GetWeight() != wxFONTWEIGHT_NORMAL
-				|| font.GetUnderlined())
-			{
-				wxFontWeight a = font.GetWeight();
-				str += wxString::Format("%s->SetFont( wxFont(%s, %s, %s, %s, %s, wxT(\"%s\")));\n", 
-					x.second->name, strFontPointSize, GetNameFromEnum<wxFontFamily>(font.GetFamily()), GetNameFromEnum<wxFontStyle>(font.GetStyle()), 
-					GetNameFromEnum<wxFontWeight>(a),
-					font.GetUnderlined() ? wxString("true") : wxString("false"), font.GetFaceName());
-				Sleep(10);
-			}
-			str += "\n";
+			AddFontAndColor(str, x.first, x.second);
 		}		
 		if (x.second->type == wxTypes::Text)
 		{
 			wxStaticText* t = reinterpret_cast<wxStaticText*>(x.first);
+			wxString flagsStr;
+			AddFlags(flagsStr, x.first, x.second, statictext_style_values, statictext_style_flags, WXSIZEOF(statictext_style_values));
 			str += wxString::Format("%s = new wxStaticText(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
 				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}		
 		if (x.second->type == wxTypes::ComboBox)
 		{
 			wxComboBox* t = reinterpret_cast<wxComboBox*>(x.first);
+			wxString flagsStr;
+			AddFlags(flagsStr, x.first, x.second, combobox_style_values, combobox_style_flags, WXSIZEOF(combobox_style_values));
 			str += wxString::Format("%s = new wxComboBox(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
 				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
-		}		
+			AddFontAndColor(str, x.first, x.second);
+		}
 		if (x.second->type == wxTypes::Choise)
 		{
 			wxChoice* t = reinterpret_cast<wxChoice*>(x.first);
 			str += wxString("wxArrayString m_choiceChoices;\n");
+			wxString flagsStr;
+			AddFlags(flagsStr, x.first, x.second, choice_style_values, choice_style_flags, WXSIZEOF(choice_style_values));
 			str += wxString::Format("%s = new wxChoice(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), m_choiceChoices, 0);\n", 
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 			str += wxString::Format("%s->SetSelection(0);\n", x.second->name);
+			AddFontAndColor(str, x.first, x.second);
 		}
 		if (x.second->type == wxTypes::ListBox)
 		{
 			wxListBox* t = reinterpret_cast<wxListBox*>(x.first);
 			str += wxString::Format("%s = new wxListBox(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}		
 		if (x.second->type == wxTypes::CheckBox)
 		{
 			wxCheckBox* t = reinterpret_cast<wxCheckBox*>(x.first);
+			wxString flagsStr;
+			AddFlags(flagsStr, x.first, x.second, checkbox_style_values, checkbox_style_flags, WXSIZEOF(checkbox_style_values));
 			str += wxString::Format("%s = new wxCheckBox(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
 				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}		
 		if (x.second->type == wxTypes::StaticLine)
 		{
 			wxStaticLine* t = reinterpret_cast<wxStaticLine*>(x.first);
+			//wxString flagsStr;
+			//AddFlags(flagsStr, x.first, x.second, checkbox_style_values, checkbox_style_flags, WXSIZEOF(checkbox_style_values));
 			str += wxString::Format("%s = new wxStaticLine(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}
 		if (x.second->type == wxTypes::Slider)
 		{
 			wxSlider* t = reinterpret_cast<wxSlider*>(x.first);
+			wxString flagsStr;
+			AddFlags(flagsStr, x.first, x.second, slider_style_values, slider_style_flags, WXSIZEOF(slider_style_values));
 			str += wxString::Format("%s = new wxSlider(this, wxID_ANY, %d, %d, %d, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
 				x.second->name, 0, t->GetMin(), t->GetMax(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}		
 		if (x.second->type == wxTypes::Gauge)
 		{
 			wxGauge* t = reinterpret_cast<wxGauge*>(x.first);
+			wxString flagsStr;
+			AddFlags(flagsStr, x.first, x.second, gauge_style_values, gauge_style_flags, WXSIZEOF(gauge_style_values));
 			str += wxString::Format("%s = new wxGauge(this, wxID_ANY, 100, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}		
 		if (x.second->type == wxTypes::SpinControl)
 		{
 			wxSpinCtrl* t = reinterpret_cast<wxSpinCtrl*>(x.first);
 			str += wxString::Format("%s = new wxSpinCtrl(this, wxID_ANY, wxEmptyString, wxPoint(%d, %d), wxSize(%d, %d), wxSP_ARROW_KEYS, 1, 255, 1);\n", 
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}		
 		if (x.second->type == wxTypes::TextControl)
 		{
 			wxTextCtrl* t = reinterpret_cast<wxTextCtrl*>(x.first);
+			wxString flagsStr;
+			AddFlags(flagsStr, x.first, x.second, textctrl_style_values, textctrl_style_flags, WXSIZEOF(textctrl_style_values));
 			str += wxString::Format("%s = new wxTextCtrl(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), 0);\n", 
 				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}		
 		if (x.second->type == wxTypes::ToggleButton)
 		{
 			wxToggleButton* t = reinterpret_cast<wxToggleButton*>(x.first);
 			str += wxString::Format("%s = new wxToggleButton(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), 0);\n", 
 				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}	
 		if (x.second->type == wxTypes::SpinCtrlDouble)
 		{
 			wxSpinCtrlDouble* t = reinterpret_cast<wxSpinCtrlDouble*>(x.first);
 			str += wxString::Format("%s = new wxSpinCtrlDouble(this, wxID_ANY, wxEmptyString, wxPoint(%d, %d), wxSize(%d, %d), wxSP_ARROW_KEYS, 0, 100, 0, 1);\n", 
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}	
 		if (x.second->type == wxTypes::SearchCtrl)
 		{
 			wxSearchCtrl* t = reinterpret_cast<wxSearchCtrl*>(x.first);
 			str += wxString::Format("%s = new wxSearchCtrl(this, wxID_ANY, wxEmptyString, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}
 		if (x.second->type == wxTypes::FontPicker)
 		{
 			wxFontPickerCtrl* t = reinterpret_cast<wxFontPickerCtrl*>(x.first);
 			str += wxString::Format("%s = new wxFontPickerCtrl(this, wxID_ANY, wxNullFont, xPoint(%d, %d), wxSize(%d, %d), wxFNTP_DEFAULT_STYLE);\n", 
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}	
 		if (x.second->type == wxTypes::FilePicker)
 		{
 			wxFilePickerCtrl* t = reinterpret_cast<wxFilePickerCtrl*>(x.first);
 			str += wxString::Format("%s = new wxFilePickerCtrl(this, wxID_ANY, wxEmptyString, wxT(\"Select a file\"), wxT(\"*.*\"), wxPoint(%d, %d), wxSize(%d, %d), wxFLP_DEFAULT_STYLE);\n",
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}	
 		if (x.second->type == wxTypes::DirPicker)
 		{
 			wxDirPickerCtrl* t = reinterpret_cast<wxDirPickerCtrl*>(x.first);
 			str += wxString::Format("%s = new wxDirPickerCtrl(this, wxID_ANY, wxEmptyString, wxT(\"Select a folder\"), wxPoint(%d, %d), wxSize(%d, %d), wxDIRP_DEFAULT_STYLE);\n",
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}	
 		if (x.second->type == wxTypes::DatePicker)
 		{
 			wxDatePickerCtrl* t = reinterpret_cast<wxDatePickerCtrl*>(x.first);
 			str += wxString::Format("%s = new wxDatePickerCtrl(this, wxID_ANY, wxDefaultDateTime, wxPoint(%d, %d), wxSize(%d, %d), wxDP_DEFAULT);\n",
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}	
 		if (x.second->type == wxTypes::TimePicker)
 		{
 			wxTimePickerCtrl* t = reinterpret_cast<wxTimePickerCtrl*>(x.first);
 			str += wxString::Format("%s = new wxTimePickerCtrl(this, wxID_ANY, wxDefaultDateTime, wxPoint(%d, %d), wxSize(%d, %d), wxTP_DEFAULT);\n",
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}	
 		if (x.second->type == wxTypes::CalendarCtrl)
 		{
 			wxCalendarCtrl* t = reinterpret_cast<wxCalendarCtrl*>(x.first);
 			str += wxString::Format("%s = new wxCalendarCtrl(this, wxID_ANY, wxDefaultDateTime, wxPoint(%d, %d), wxSize(%d, %d), wxCAL_SHOW_HOLIDAYS);\n",
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}			
 		if (x.second->type == wxTypes::GenericDirCtrl)
 		{
 			wxGenericDirCtrl* t = reinterpret_cast<wxGenericDirCtrl*>(x.first);
 			str += wxString::Format("%s = new wxGenericDirCtrl(this, wxID_ANY, wxEmptyString, wxPoint(%d, %d), wxSize(%d, %d), wxDIRCTRL_3D_INTERNAL | wxSUNKEN_BORDER, wxEmptyString, 0);\n",
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}
 		if (x.second->type == wxTypes::SpinButton)
 		{
 			wxSpinButton* t = reinterpret_cast<wxSpinButton*>(x.first);
 			str += wxString::Format("%s = new wxSpinButton(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), 0);\n",
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			AddFontAndColor(str, x.first, x.second);
 		}
 	}
 	cpp_panel->m_StyledTextCtrl->ClearAll();

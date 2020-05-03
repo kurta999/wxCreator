@@ -170,7 +170,10 @@ public:
 	void OnSave(wxCommandEvent& event);
 	void OnSaveAs(wxCommandEvent& event);
 	void SaveWidgets(void);
+	void AddFlags(wxString& wxstr, void* widget, ObjectStructure* obj, const long* to_pointer, const wxString* to_pointer_str, const long max_array_size);
+	void AddFontAndColor(wxString& wxstr, void* widget, ObjectStructure* obj);
 	void Changeing(wxAuiNotebookEvent& event);
+
 	void OnMenuItemSelected(wxCommandEvent& event);
 	wxDECLARE_EVENT_TABLE();
 	MyPanel* panel;
