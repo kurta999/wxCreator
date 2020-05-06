@@ -166,9 +166,11 @@ public:
 	void OnAbout(wxCommandEvent& event);
 	void OnSize(wxSizeEvent& event);
 	void OnHelp(wxCommandEvent& event);
+	void OnDestroyAll(wxCommandEvent& event);
 	void OnOpen(wxCommandEvent& event);
 	void OnSave(wxCommandEvent& event);
 	void OnSaveAs(wxCommandEvent& event);
+	void OnClose(wxCloseEvent& event);
 	void SaveWidgets(void);
 	void AddFlags(wxString& wxstr, void* widget, ObjectStructure* obj, const long* to_pointer, const wxString* to_pointer_str, const long max_array_size);
 	void AddFontAndColor(wxString& wxstr, void* widget, ObjectStructure* obj);

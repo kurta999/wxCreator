@@ -27,7 +27,8 @@ constexpr int WINDOW_SIZE_Y = 1024;
 enum
 {
 	PGID = 1,
-	ID_Hello = 2,
+	ID_DestroyAll,
+	ID_Hello,
 	ID_wxSpinCltrDouble,
 	ID_wxSearchCtrl,
 	ID_wxFontPickerCtrl,
@@ -201,9 +202,11 @@ static const long gauge_style_values[] = {
 wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
 EVT_SIZE(MyFrame::OnSize)
 EVT_MENU(ID_Hello, MyFrame::OnHelp)
+EVT_MENU(ID_DestroyAll, MyFrame::OnDestroyAll)
 EVT_MENU(wxID_OPEN, MyFrame::OnOpen)
 EVT_MENU(wxID_SAVE, MyFrame::OnSave)
 EVT_MENU(wxID_SAVEAS, MyFrame::OnSaveAs)
+EVT_CLOSE(MyFrame::OnClose)
 wxEND_EVENT_TABLE()
 
 wxBEGIN_EVENT_TABLE(MyPanel, wxPanel)
@@ -263,6 +266,19 @@ void MyFrame::OnHelp(wxCommandEvent& event)
 		Re-selecting an object can be done with Left mouse button\nMove Up & Down, Left & Right with keys\nResize them with 4, 8, 6, 2", "Help");
 }
 
+void MyFrame::OnDestroyAll(wxCommandEvent& event)
+{
+	for (auto x : objects)
+	{
+		if (!x.first || !x.second) continue;
+		wxStaticText* t = reinterpret_cast<wxStaticText*>(x.first);
+		t->Destroy();
+	}
+	objects.clear();
+	panel->m_TreeCtrl->DeleteAllItems();
+	panel->m_RootItem = panel->m_TreeCtrl->AddRoot("Items");
+}
+
 void MyFrame::OnOpen(wxCommandEvent& event)
 {
 	wxFileDialog openFileDialog(this, _("Open XML file"), "", "", "XML files (*.xml)|*.xml", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
@@ -276,6 +292,8 @@ void MyFrame::OnOpen(wxCommandEvent& event)
 		t->Destroy();
 	}
 	objects.clear();
+	panel->m_TreeCtrl->DeleteAllItems();
+	panel->m_RootItem = panel->m_TreeCtrl->AddRoot("Items");
 	wxString path = openFileDialog.GetPath();
 	panel->LoadFromXml(path);
 	file_path = path;
@@ -300,6 +318,11 @@ void MyFrame::OnSaveAs(wxCommandEvent& event)
 		return;
 	file_path = saveFileDialog.GetPath();
 	SaveWidgets();
+}
+
+void MyFrame::OnClose(wxCloseEvent& event)
+{
+	
 }
 
 void MyFrame::SaveWidgets(void)
@@ -548,8 +571,8 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 			wxStaticText* t = reinterpret_cast<wxStaticText*>(x.first);
 			wxString flagsStr;
 			AddFlags(flagsStr, x.first, x.second, statictext_style_values, statictext_style_flags, WXSIZEOF(statictext_style_values));
-			str += wxString::Format("%s = new wxStaticText(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
-				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxStaticText(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), %s);\n", 
+				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, flagsStr);
 			AddFontAndColor(str, x.first, x.second);
 		}		
 		if (x.second->type == wxTypes::ComboBox)
@@ -557,8 +580,8 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 			wxComboBox* t = reinterpret_cast<wxComboBox*>(x.first);
 			wxString flagsStr;
 			AddFlags(flagsStr, x.first, x.second, combobox_style_values, combobox_style_flags, WXSIZEOF(combobox_style_values));
-			str += wxString::Format("%s = new wxComboBox(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
-				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxComboBox(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), %s);\n", 
+				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, flagsStr);
 			AddFontAndColor(str, x.first, x.second);
 		}
 		if (x.second->type == wxTypes::Choise)
@@ -567,15 +590,15 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 			str += wxString("wxArrayString m_choiceChoices;\n");
 			wxString flagsStr;
 			AddFlags(flagsStr, x.first, x.second, choice_style_values, choice_style_flags, WXSIZEOF(choice_style_values));
-			str += wxString::Format("%s = new wxChoice(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), m_choiceChoices, 0);\n", 
-				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxChoice(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), m_choiceChoices, %s);\n", 
+				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, flagsStr);
 			str += wxString::Format("%s->SetSelection(0);\n", x.second->name);
 			AddFontAndColor(str, x.first, x.second);
 		}
 		if (x.second->type == wxTypes::ListBox)
 		{
 			wxListBox* t = reinterpret_cast<wxListBox*>(x.first);
-			str += wxString::Format("%s = new wxListBox(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
+			str += wxString::Format("%s = new wxListBox(this, wxID_ANY, wxPoint(%d, %d), wxSize(%d, %d));\n", 
 				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
 			AddFontAndColor(str, x.first, x.second);
 		}		
@@ -584,8 +607,8 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 			wxCheckBox* t = reinterpret_cast<wxCheckBox*>(x.first);
 			wxString flagsStr;
 			AddFlags(flagsStr, x.first, x.second, checkbox_style_values, checkbox_style_flags, WXSIZEOF(checkbox_style_values));
-			str += wxString::Format("%s = new wxCheckBox(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
-				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxCheckBox(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), wxSize(%d, %d), %s);\n", 
+				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, flagsStr);
 			AddFontAndColor(str, x.first, x.second);
 		}		
 		if (x.second->type == wxTypes::StaticLine)
@@ -602,8 +625,8 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 			wxSlider* t = reinterpret_cast<wxSlider*>(x.first);
 			wxString flagsStr;
 			AddFlags(flagsStr, x.first, x.second, slider_style_values, slider_style_flags, WXSIZEOF(slider_style_values));
-			str += wxString::Format("%s = new wxSlider(this, wxID_ANY, %d, %d, %d, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
-				x.second->name, 0, t->GetMin(), t->GetMax(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxSlider(this, wxID_ANY, %d, %d, %d, wxPoint(%d, %d), wxSize(%d, %d), %s);\n", 
+				x.second->name, 0, t->GetMin(), t->GetMax(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, flagsStr);
 			AddFontAndColor(str, x.first, x.second);
 		}		
 		if (x.second->type == wxTypes::Gauge)
@@ -611,8 +634,8 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 			wxGauge* t = reinterpret_cast<wxGauge*>(x.first);
 			wxString flagsStr;
 			AddFlags(flagsStr, x.first, x.second, gauge_style_values, gauge_style_flags, WXSIZEOF(gauge_style_values));
-			str += wxString::Format("%s = new wxGauge(this, wxID_ANY, 100, wxPoint(%d, %d), wxSize(%d, %d), 0);\n", 
-				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxGauge(this, wxID_ANY, 100, wxPoint(%d, %d), wxSize(%d, %d), %s);\n", 
+				x.second->name, t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, flagsStr);
 			AddFontAndColor(str, x.first, x.second);
 		}		
 		if (x.second->type == wxTypes::SpinControl)
@@ -627,8 +650,8 @@ void MyFrame::Changeing(wxAuiNotebookEvent& event)
 			wxTextCtrl* t = reinterpret_cast<wxTextCtrl*>(x.first);
 			wxString flagsStr;
 			AddFlags(flagsStr, x.first, x.second, textctrl_style_values, textctrl_style_flags, WXSIZEOF(textctrl_style_values));
-			str += wxString::Format("%s = new wxTextCtrl(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), 0);\n", 
-				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y);
+			str += wxString::Format("%s = new wxTextCtrl(this, wxID_ANY, wxT(\"%s\"), wxPoint(%d, %d), %s);\n", 
+				x.second->name, t->GetLabelText(), t->GetPosition().x, t->GetPosition().y, t->GetSize().x, t->GetSize().y, flagsStr);
 			AddFontAndColor(str, x.first, x.second);
 		}		
 		if (x.second->type == wxTypes::ToggleButton)
@@ -816,6 +839,7 @@ MyFrame::MyFrame(const wxString& title)
 	menuFile->Append(wxID_OPEN, "&Open file\tCtrl-O", "Open file");
 	menuFile->Append(wxID_SAVE, "&Save file\tCtrl-S", "Save file");
 	menuFile->Append(wxID_SAVEAS, "&Save file As\tCtrl-S", "Save file As other");
+	menuFile->Append(ID_DestroyAll, "&Destroy all widgets\tCtrl-W", "Destroy all widgets");
 	menuFile->Append(ID_Hello, "&Read help\tCtrl-H", "Read description about this program");
 	menuFile->Append(wxID_EXIT);
 	wxMenu* menuHelp = new wxMenu;
